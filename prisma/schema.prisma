@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id                     String         @id @default(uuid())
+  name                   String
+  slug                   String         @unique
+  category               String
+  description            String
+  details                String?
+  active                 Boolean        @default(true)
+  featured               Boolean        @default(false)
+  availableSizes         String         @default("[\"PP\",\"P\",\"M\",\"G\",\"GG\",\"XGG\"]")
+  availableColors        String         @default("[\"Branco\",\"Preto\",\"Azul Marinho\",\"Cinza\",\"Vermelho\",\"Amarelo\"]")
+  customizationPositions String?        @default("[\"Frente\",\"Costas\",\"Manga Direita\",\"Manga Esquerda\",\"Nome Individual\",\"Número Individual\",\"Outro Local\"]")
+  printTechniques        String?        @default("Silk Screen, Sublimação, DTF HD, Bordado")
+  leadTime               String?        @default("7 a 15 dias úteis")
+  minQuantity            String?        @default("10 unidades")
+  priceRange             String?        @default("Consulte valor por quantidade")
+  basePrice              Float?         @default(0)
+  pricingTiers           String?        @default("[]")
+  images                 ProductImage[]
+  quoteItems             QuoteItem[]
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  imageUrl  String
+  position  Int      @default(0)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Print {
+  id         String      @id @default(uuid())
+  code       String      @unique
+  name       String
+  // Deprecated single category field; kept for migration compatibility
+  // category   String
+  tags       String      @default("[]")
+  imageUrl   String
+  active     Boolean     @default(true)
+  featured   Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  quoteItems QuoteItem[]
+  categories PrintCategory[]
+}
+
+model Category {
+  id      String   @id @default(uuid())
+  name    String   @unique
+  prints  PrintCategory[]
+}
+
+model PrintCategory {
+  printId    String
+  categoryId String
+  print      Print    @relation(fields: [printId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([printId, categoryId])
+}
+
+model Quote {
+  id             String         @id @default(uuid())
+  quoteCode      String         @unique
+  customerName   String
+  whatsapp       String
+  email          String?
+  city           String?
+  state          String?
+  desiredDate    String?
+  notes          String?
+  estimatedTotal Float?         @default(0)
+  status         String         @default("Recebido")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  items          QuoteItem[]
+  files          UploadedFile[]
+}
+
+model QuoteItem {
+  id                     String      @id @default(uuid())
+  quoteId                String
+  quote                  Quote       @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  productId              String?
+  product                Product?    @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName            String
+  printId                String?
+  print                  Print?      @relation(fields: [printId], references: [id], onDelete: SetNull)
+  printCode              String?
+  printName              String?
+  quantity               Int
+  unitPrice              Float?      @default(0)
+  totalPrice             Float?      @default(0)
+  customizationPositions String      @default("[\"Frente\"]")
+  hasCustomArt           Boolean     @default(false)
+  notes                  String?
+  sizes                  QuoteSize[]
+}
+
+model QuoteSize {
+  id          String    @id @default(uuid())
+  quoteItemId String
+  quoteItem   QuoteItem @relation(fields: [quoteItemId], references: [id], onDelete: Cascade)
+  size        String
+  quantity    Int
+}
+
+model UploadedFile {
+  id           String   @id @default(uuid())
+  quoteId      String
+  quote        Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  fileUrl      String
+  originalName String
+  mimeType     String
+  size         Int
+  createdAt    DateTime @default(now())
+}
+
+model Testimonial {
+  id        String   @id @default(uuid())
+  name      String
+  city      String
+  text      String
+  rating    Int      @default(5)
+  image     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model SiteSetting {
+  key   String @id
+  value String
+}
