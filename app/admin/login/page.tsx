@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Lock, Mail, KeyRound, ArrowRight, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isInactivityLogout = searchParams.get('reason') === 'inactivity';
@@ -118,5 +118,13 @@ export default function AdminLoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-white text-xs">Carregando...</div>}>
+      <AdminLoginForm />
+    </Suspense>
   );
 }
