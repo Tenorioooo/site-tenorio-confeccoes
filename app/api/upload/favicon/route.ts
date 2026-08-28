@@ -4,7 +4,15 @@ import path from 'path';
 import { existsSync } from 'fs';
 import { prisma } from '@/lib/db';
 
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/x-icon'];
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/svg+xml',
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+  'image/ico',
+];
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.svg', '.ico'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -21,7 +29,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'O favicon deve ter no máximo 5MB.' }, { status: 400 });
     }
 
-    const ext = path.extname(file.name || '').toLowerCase();
+    let ext = path.extname(file.name || '').toLowerCase();
+    if (!ext) {
+      if (file.type === 'image/svg+xml') ext = '.svg';
+      else if (file.type === 'image/x-icon' || file.type === 'image/vnd.microsoft.icon' || file.type === 'image/ico') ext = '.ico';
+      else if (file.type === 'image/webp') ext = '.webp';
+      else if (file.type === 'image/jpeg') ext = '.jpg';
+      else ext = '.png';
+    }
+
     if (!ALLOWED_EXTENSIONS.includes(ext) && !ALLOWED_MIME_TYPES.includes(file.type)) {
       return NextResponse.json(
         { error: 'Formato inválido. Use PNG, JPG, SVG ou ICO.' },
@@ -44,7 +60,19 @@ export async function POST(request: Request) {
 
     await writeFile(filePath, buffer);
 
-    // Also overwrite public/favicon.svg / public/icon.png / app/icon.png if suitable
+    // Also update public/icon.png / public/favicon.ico for browser/crawler root requests
+    try {
+      if (ext === '.ico') {
+        await writeFile(path.join(publicDir, 'favicon.ico'), buffer);
+      } else if (ext === '.svg') {
+        await writeFile(path.join(publicDir, 'favicon.svg'), buffer);
+      } else {
+        await writeFile(path.join(publicDir, 'icon.png'), buffer);
+      }
+    } catch (e) {
+      console.warn('Could not mirror root favicon file:', e);
+    }
+
     const faviconUrl = `/logo/${safeName}?t=${timestamp}`;
 
     // Persist to site settings
@@ -57,6 +85,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: faviconUrl });
   } catch (error: any) {
     console.error('Error uploading favicon:', error);
-    return NextResponse.json({ error: 'Falha ao salvar o favicon.' }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message ? `Falha ao salvar favicon: ${error.message}` : 'Falha ao salvar o favicon.' },
+      { status: 500 }
+    );
   }
 }

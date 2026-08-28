@@ -44,33 +44,33 @@ function AdminLoginForm() {
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 space-y-6 shadow-2xl relative">
         <div className="flex flex-col items-start gap-2">
-            <div className="relative flex items-center justify-start">
-              <Image
-                src="/logo/LOGO2 - TENÓRIO CONFECÇÕES.png"
-                alt="Tenório Confecções"
-                width={64}
-                height={64}
-                unoptimized
-                className="object-contain h-16 w-auto max-w-[200px] drop-shadow-md mx-auto"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/logo/Icon.png';
-                }}
-              />
-            </div>
-            <h1 className="font-serif font-bold text-2xl text-white w-full text-center">Painel Administrativo</h1>
-            <p className="text-xs text-slate-400 w-full text-center">Tenório Confecções — Controle de Produtos e Orçamentos</p>
+          <div className="relative flex items-center justify-start">
+            <Image
+              src="/logo/LOGO2 - TENÓRIO CONFECÇÕES.png"
+              alt="Tenório Confecções"
+              width={64}
+              height={64}
+              unoptimized
+              className="object-contain h-16 w-auto max-w-[200px] drop-shadow-md mx-auto"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/logo/Icon.png';
+              }}
+            />
           </div>
+          <h1 className="font-serif font-bold text-2xl text-white w-full text-center">Painel Administrativo</h1>
+          <p className="text-xs text-slate-400 w-full text-center">Tenório Confecções — Controle de Produtos e Orçamentos</p>
+        </div>
 
-          {/* Inactivity notice */}
-          {isInactivityLogout && (
-            <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
-              <Clock className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-              <p className="text-xs text-amber-300 leading-relaxed">
-                <span className="font-bold block">Sessão encerrada por inatividade.</span>
-                Você foi desconectado automaticamente por ausência no painel. Por favor, faça o login novamente.
-              </p>
-            </div>
-          )}
+        {/* Inactivity notice */}
+        {isInactivityLogout && (
+          <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+            <Clock className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-amber-300 leading-relaxed">
+              <span className="font-bold block">Sessão encerrada por inatividade.</span>
+              Você foi desconectado automaticamente por ausência no painel. Por favor, faça o login novamente.
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4 text-xs">
           <div className="space-y-1">
