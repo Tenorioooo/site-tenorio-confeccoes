@@ -1,0 +1,1126 @@
+{
+  "User": [
+    {
+      "id": "3b1fe3ef-5b13-4354-801d-fcb76aed21ae",
+      "name": "Tenório",
+      "email": "nicolas.tensi@confeccoes.com",
+      "password": "$2b$12$JbAp5KStKN6KklkrbO0V0uee6nKnVg12WGuJ9zowhwF9.K4w7AZMy",
+      "role": "admin",
+      "createdAt": "2026-08-27T12:46:48.080+00:00"
+    }
+  ],
+  "Product": [
+    {
+      "id": "aaaba4c1-a6ae-4c6e-9fec-50e630d89b6f",
+      "name": "Camiseta 100% Algodão",
+      "slug": "camiseta-personalizada-algodao",
+      "category": "Camisetas",
+      "description": "Camiseta em malha penteada 100% algodão fio 30.1. Toque macio, excelente caimento e altíssima durabilidade. Ideal para eventos, festas, formaturas e marcas próprias.",
+      "details": "Gola careca reforçada, costura ombro a ombro. Disponível em Silk Screen e DTF HD.",
+      "active": 1,
+      "featured": 1,
+      "availableSizes": "[\"P\",\"M\",\"G\",\"GG\"]",
+      "availableColors": "[\"Branco\",\"Preto\",\"Azul Marinho\",\"Cáqui\",\"Marrom\",\"Militar\",\"Azul BB\",\"Cinza\",\"Bordô\"]",
+      "priceRange": "Consulte valor por quantidade",
+      "createdAt": "2026-08-27T12:46:48.414+00:00",
+      "updatedAt": "2026-08-28T00:49:10.643+00:00",
+      "customizationPositions": "[\"Frente\",\"Costas\",\"Manga Direita\",\"Manga Esquerda\",\"Nome Individual\",\"Número Individual\",\"Outro Local\"]",
+      "leadTime": "7 a 15 dias úteis",
+      "minQuantity": "1 unidades",
+      "printTechniques": "Silk Screen e DTF HD",
+      "basePrice": 0,
+      "pricingTiers": "[{\"minQty\":1,\"maxQty\":10,\"unitPrice\":49.9},{\"minQty\":11,\"maxQty\":null,\"unitPrice\":45.8}]"
+    },
+    {
+      "id": "96bd96b7-0bde-461b-98e2-fa1a7ce69eec",
+      "name": "Camiseta Dry Fit",
+      "slug": "camiseta-dry-fit-esportiva",
+      "category": "Camisetas",
+      "description": "Tecido Dry Fit de alta tecnologia com proteção UV30+. Transpirável, leve e seca rapidamente. Perfeita para corridas, academias, times e torneios.",
+      "details": "Sublimação total em alta definição sem limite de cores.",
+      "active": 1,
+      "featured": 1,
+      "availableSizes": "[\"P\",\"M\",\"G\",\"GG\"]",
+      "availableColors": "[\"Branco\",\"Preto\",\"Cinza Mescla\",\"Azul Marinho\",\"Vermelho\"]",
+      "priceRange": "Consulte valor por quantidade",
+      "createdAt": "2026-08-27T12:46:48.476+00:00",
+      "updatedAt": "2026-08-27T18:53:00.581+00:00",
+      "customizationPositions": "[\"Frente\",\"Costas\",\"Manga Direita\",\"Manga Esquerda\",\"Nome Individual\",\"Número Individual\",\"Outro Local\"]",
+      "leadTime": "15 a 30 dias úteis",
+      "minQuantity": "10 unidades",
+      "printTechniques": "Sublimação e DTF HD",
+      "basePrice": 0,
+      "pricingTiers": "[]"
+    },
+    {
+      "id": "446aad10-eca4-4b38-b57e-2d769efbda61",
+      "name": "Moletom Canguru Personalizado com Capuz",
+      "slug": "moletom-canguru-personalizado",
+      "category": "Moletons",
+      "description": "Moletom flanelado de alta gramatura. Quente, confortável e extremamente elegante para turmas, formandos, atléticas e uniformes de inverno.",
+      "details": "Bolso frontal estilo canguru, capuz forrado e cordão ajustável.",
+      "active": 1,
+      "featured": 1,
+      "availableSizes": "[\"P\",\"M\",\"G\",\"GG\"]",
+      "availableColors": "[\"Branco\",\"Preto\",\"Cáqui\",\"Cinza\",\"Rosa\"]",
+      "priceRange": "Consulte valor por quantidade",
+      "createdAt": "2026-08-27T12:46:48.699+00:00",
+      "updatedAt": "2026-08-28T00:59:26.753+00:00",
+      "customizationPositions": "[\"Frente\",\"Costas\",\"Manga Direita\",\"Manga Esquerda\",\"Nome Individual\",\"Número Individual\",\"Outro Local\"]",
+      "leadTime": "7 a 15 dias úteis",
+      "minQuantity": "1 unidades",
+      "printTechniques": "Silk Screen, Sublimação e DTF HD",
+      "basePrice": 0,
+      "pricingTiers": "[{\"minQty\":1,\"maxQty\":10,\"unitPrice\":119.9},{\"minQty\":11,\"maxQty\":null,\"unitPrice\":115.8}]"
+    },
+    {
+      "id": "28fd8482-071f-45be-be78-bb01b9ff9fe1",
+      "name": "Caneca de Alumínio + Tirante Personalizados",
+      "slug": "caneca-porcelana-personalizada",
+      "category": "Canecas",
+      "description": "Caneca de Alumínio personalizadas para festas universitárias, turmas de escola, entre outros eventos.",
+      "details": "Disponível de 300ml a 850ml.\nNome individual: R$4,00/un.\n\nÓtima para festas, turmas de terceirão, presentes e lembranças de eventos.",
+      "active": 1,
+      "featured": 1,
+      "availableSizes": "[\"300ML\",\"450ML\",\"500ML\",\"600ML\",\"700ML\",\"750ML\",\"790ML\",\"800ML\",\"850ML\",\"NOME INDIVIDUAL\"]",
+      "availableColors": "[\"Branco\",\"Preto\",\"Cinza Mescla\",\"Azul Marinho\",\"Vermelho\"]",
+      "priceRange": "Consulte valor por quantidade",
+      "createdAt": "2026-08-27T12:46:48.744+00:00",
+      "updatedAt": "2026-08-28T05:30:06.960+00:00",
+      "customizationPositions": "[\"Frente\",\"Verso\",\"Meio\",\"Tirante\"]",
+      "leadTime": "15 a 30 dias úteis",
+      "minQuantity": "20 unidades por variação",
+      "printTechniques": "Sublimação",
+      "basePrice": 0,
+      "pricingTiers": "{\"mode\":\"by_variant\",\"variantTiers\":{\"300ML\":[{\"minQty\":20,\"maxQty\":null,\"unitPrice\":28.46}],\"450ML\":[{\"minQty\":20,\"maxQty\":null,\"unitPrice\":38.38}],\"500ML\":[{\"minQty\":20,\"maxQty\":null,\"unitPrice\":31.66}],\"600ML\":[{\"minQty\":20,\"maxQty\":null,\"unitPrice\":33.24}],\"700ML\":[{\"minQty\":20,\"maxQty\":null,\"unitPrice\":36.86}],\"750ML\":[{\"minQty\":20,\"maxQty\":null,\"unitPrice\":41.4}],\"790ML\":[{\"minQty\":20,\"maxQty\":null,\"unitPrice\":48.44}],\"800ML\":[{\"minQty\":20,\"maxQty\":null,\"unitPrice\":33.56}],\"850ML\":[{\"minQty\":20,\"maxQty\":null,\"unitPrice\":35.9}],\"NOME INDIVIDUAL\":[{\"minQty\":1,\"maxQty\":null,\"unitPrice\":4}]},\"tiers\":[]}"
+    },
+    {
+      "id": "90dc4588-9c02-41d3-a287-86f92a4ed9b7",
+      "name": "Abadá Personalizado",
+      "slug": "abada-personalizado-eventos",
+      "category": "Abadás",
+      "description": "Abadá em tecido 100% poliéster ou dry fit leve. Sublimação total frente e costas com cores vivas e vibrantes para micaretas, carnaval e festas.",
+      "details": "Corte anatômico confortável, acabamento impecável em viés.",
+      "active": 1,
+      "featured": 1,
+      "availableSizes": "[\"Tamanho Único\"]",
+      "availableColors": "[\"Personalizado\"]",
+      "priceRange": "Consulte valor por quantidade",
+      "createdAt": "2026-08-27T12:46:48.776+00:00",
+      "updatedAt": "2026-08-28T00:56:05.534+00:00",
+      "customizationPositions": "[\"Frente\",\"Costas\"]",
+      "leadTime": "7 a 15 dias úteis",
+      "minQuantity": "10 unidades",
+      "printTechniques": "Sublimação",
+      "basePrice": 0,
+      "pricingTiers": "[{\"minQty\":10,\"maxQty\":null,\"unitPrice\":49.8}]"
+    },
+    {
+      "id": "7d6a29f7-d439-4c99-b06f-3ddea6a76873",
+      "name": "Bandeira Personalizada de Poliéster",
+      "slug": "bandeira-personalizada-poliester",
+      "category": "Bandeiras",
+      "description": "Bandeira estampada por sublimação em tecido lavável de alta durabilidade. Ideal para torcidas, eventos esportivos, fachadas e convenções.",
+      "details": "Disponível em 140x100cm.",
+      "active": 1,
+      "featured": 1,
+      "availableSizes": "[\"Tamanho Único\"]",
+      "availableColors": "[\"Personalizada\"]",
+      "priceRange": "Consulte valor por quantidade",
+      "createdAt": "2026-08-27T12:46:48.818+00:00",
+      "updatedAt": "2026-08-28T00:57:13.454+00:00",
+      "customizationPositions": "[\"Frente\"]",
+      "leadTime": "7 a 15 dias úteis",
+      "minQuantity": "1 unidades",
+      "printTechniques": "Sublimação",
+      "basePrice": 0,
+      "pricingTiers": "[{\"minQty\":1,\"maxQty\":null,\"unitPrice\":99.8}]"
+    },
+    {
+      "id": "760aa37c-a958-4d48-aa8e-979da1bff23b",
+      "name": "Wind Banner",
+      "slug": "wind-banner-publicitario",
+      "category": "Wind Banner",
+      "description": "Flag banner promocional para fachadas de lojas, postos, eventos e praias. Altíssima visibilidade e resistência ao vento.",
+      "details": "Tecido dupla face sublimado e base de apoio preenchível.",
+      "active": 1,
+      "featured": 1,
+      "availableSizes": "[\"Tamanho Único\",\"KIT SUPORTE + WIND BANNER\"]",
+      "availableColors": "[\"Personalizado\"]",
+      "priceRange": "Consulte valor por quantidade",
+      "createdAt": "2026-08-27T12:46:48.876+00:00",
+      "updatedAt": "2026-08-28T05:25:50.936+00:00",
+      "customizationPositions": "[\"Frente\",\"Costas\"]",
+      "leadTime": "15 a 30 dias úteis",
+      "minQuantity": "1 unidades",
+      "printTechniques": "Sublimação",
+      "basePrice": 0,
+      "pricingTiers": "{\"mode\":\"by_variant\",\"variantTiers\":{\"Tamanho Único\":[{\"minQty\":1,\"maxQty\":null,\"unitPrice\":129.8}],\"KIT SUPORTE + WIND BANNER\":[{\"minQty\":1,\"maxQty\":null,\"unitPrice\":289.8}]},\"tiers\":[]}"
+    },
+    {
+      "id": "dfa89e9e-74dc-4972-9660-d3bd2c819574",
+      "name": "Camisa Polo",
+      "slug": "camisa-polo-uniforme-corporativo",
+      "category": "Camisetas",
+      "description": "Camisetas de alto padrão e com tecido de extrema qualidade, ideal para uniformes corporativos e outros.",
+      "details": "Camisetas de alto padrão com estampas normalmente em DTF.",
+      "active": 1,
+      "featured": 0,
+      "availableSizes": "[\"P\",\"M\",\"G\",\"GG\"]",
+      "availableColors": "[\"Branco\",\"Preto\",\"Azul Marinho\"]",
+      "priceRange": "Consultar",
+      "createdAt": "2026-08-27T12:46:48.912+00:00",
+      "updatedAt": "2026-08-28T05:34:26.983+00:00",
+      "customizationPositions": "[\"Frente\",\"Costas\"]",
+      "leadTime": "7 a 15 dias úteis",
+      "minQuantity": "10",
+      "printTechniques": "Silk Screen e DTF HD",
+      "basePrice": 0,
+      "pricingTiers": "{\"mode\":\"unified\",\"tiers\":[]}"
+    }
+  ],
+  "ProductImage": [
+    {
+      "id": "f3ebd1d4-addb-4b3f-abd3-00d9ab27dde2",
+      "productId": "96bd96b7-0bde-461b-98e2-fa1a7ce69eec",
+      "imageUrl": "/uploads/products/1787841102005_veocod.jpg",
+      "position": 0
+    },
+    {
+      "id": "c26ea0ad-6248-4cc2-9fd3-f639102c474b",
+      "productId": "aaaba4c1-a6ae-4c6e-9fec-50e630d89b6f",
+      "imageUrl": "/uploads/products/1787841152556_zd0f46.png",
+      "position": 0
+    },
+    {
+      "id": "cb13a97f-4a98-4cb4-8d21-f9b7b0c63a1d",
+      "productId": "90dc4588-9c02-41d3-a287-86f92a4ed9b7",
+      "imageUrl": "https://cdn.awsli.com.br/600x700/9/9344/produto/336048477/1-gjnub4m8z9.png",
+      "position": 0
+    },
+    {
+      "id": "be6bcb27-2ffe-487a-8f81-5afa61b7d6d5",
+      "productId": "7d6a29f7-d439-4c99-b06f-3ddea6a76873",
+      "imageUrl": "/uploads/products/1787840891298_t0jyej.jpg",
+      "position": 0
+    },
+    {
+      "id": "9d3fb9aa-9a85-45fc-9729-3e0584d0c2a5",
+      "productId": "446aad10-eca4-4b38-b57e-2d769efbda61",
+      "imageUrl": "/uploads/products/1787841064981_qgptad.png",
+      "position": 0
+    },
+    {
+      "id": "f9ca7e8e-e318-4a05-b994-92d101a9f525",
+      "productId": "760aa37c-a958-4d48-aa8e-979da1bff23b",
+      "imageUrl": "/uploads/products/1787840876600_6dgicb.png",
+      "position": 0
+    },
+    {
+      "id": "880a9469-1a38-4904-b1e6-f0636a744c28",
+      "productId": "28fd8482-071f-45be-be78-bb01b9ff9fe1",
+      "imageUrl": "https://cdn.dooca.store/891/products/153e4fc7-f5ab-4615-b2b0-f8a5612cb3a7-photoroompng-photoroom-photoroompng-photoroom_1600x1600+fill_ffffff.png?v=1693917510",
+      "position": 0
+    },
+    {
+      "id": "cc287bed-1028-48b8-a331-10e5e83ddf6e",
+      "productId": "dfa89e9e-74dc-4972-9660-d3bd2c819574",
+      "imageUrl": "/uploads/products/1787866716263_uz4706.png",
+      "position": 0
+    },
+    {
+      "id": "fe4350ad-2908-443b-b61f-21e8ae370e67",
+      "productId": "dfa89e9e-74dc-4972-9660-d3bd2c819574",
+      "imageUrl": "/uploads/products/1787866732167_p952ik.png",
+      "position": 1
+    }
+  ],
+  "Print": [
+    {
+      "id": "dd053988-83f3-440b-ac29-5568f7e9e293",
+      "code": "EST-001",
+      "name": "PEDAGOGIA CORUJA",
+      "tags": "[\"Tropical\",\"Praia\",\"Verão\",\"Festa\",\"Sunset\"]",
+      "imageUrl": "/uploads/prints/1787858645188_qjjuxc.png",
+      "active": 1,
+      "featured": 1,
+      "createdAt": "2026-08-27T12:49:56.317+00:00"
+    },
+    {
+      "id": "2d361753-039a-46d3-8eca-befc7b59eff3",
+      "code": "EST-002",
+      "name": "DRAGÃO AZUL",
+      "tags": "[\"Neon\",\"Summer\",\"Vibes\",\"Balada\",\"Carnaval\"]",
+      "imageUrl": "/uploads/prints/1787859071679_gu032k.png",
+      "active": 1,
+      "featured": 1,
+      "createdAt": "2026-08-27T12:49:56.347+00:00"
+    },
+    {
+      "id": "b54d80b1-68a5-4a20-a487-5a52bcf84970",
+      "code": "EST-003",
+      "name": "TIGRE",
+      "tags": "[\"Esporte\",\"Time\",\"Campeonato\",\"Equipe\",\"Futebol\"]",
+      "imageUrl": "/uploads/prints/1787859241343_juyx6s.png",
+      "active": 1,
+      "featured": 1,
+      "createdAt": "2026-08-27T12:49:56.401+00:00"
+    },
+    {
+      "id": "3097b336-ff9f-4e6f-bd6b-eee1717421ad",
+      "code": "EST-004",
+      "name": "ONÇA",
+      "tags": "[\"Minimalista\",\"Tipografia\",\"Urbano\",\"Streetwear\"]",
+      "imageUrl": "/uploads/prints/1787859353232_fg1dp1.png",
+      "active": 1,
+      "featured": 1,
+      "createdAt": "2026-08-27T12:49:56.432+00:00"
+    },
+    {
+      "id": "00bbb48e-081e-4be6-9386-3c615c6932ad",
+      "code": "EST-005",
+      "name": "POLVO VERMELHO",
+      "tags": "[\"Formando\",\"Formatura\",\"Terceirão\",\"Faculdade\"]",
+      "imageUrl": "/uploads/prints/1787859406584_zwhuav.png",
+      "active": 1,
+      "featured": 1,
+      "createdAt": "2026-08-27T12:49:56.449+00:00"
+    },
+    {
+      "id": "6789c6b8-d308-4bde-957c-e783b3663457",
+      "code": "EST-006",
+      "name": "PANTERA",
+      "tags": "[\"Empresa\",\"Corporativo\",\"Branded\",\"Equipe\"]",
+      "imageUrl": "/uploads/prints/1787859467531_mp5bad.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T12:49:56.479+00:00"
+    },
+    {
+      "id": "f807cc1b-3042-4b6d-a1f0-b90397379416",
+      "code": "EST-007",
+      "name": "PANTERA 2",
+      "tags": "[\"Igreja\",\"Retiro\",\"Gospel\",\"Jovens\"]",
+      "imageUrl": "/uploads/prints/1787859532717_b6i7rn.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T12:49:56.511+00:00"
+    },
+    {
+      "id": "19e48f5f-41ee-4e46-a293-fec670f28d0e",
+      "code": "EST-008",
+      "name": "ÁGUIA",
+      "tags": "[\"Abadá\",\"Bloco\",\"Carnaval\",\"Micareta\",\"Festa\"]",
+      "imageUrl": "/uploads/prints/1787859582635_ldizqe.png",
+      "active": 1,
+      "featured": 1,
+      "createdAt": "2026-08-27T12:49:56.532+00:00"
+    },
+    {
+      "id": "70221cad-281b-4789-bf2b-43489f039fce",
+      "code": "EST-009",
+      "name": "AMPULHETA",
+      "tags": "[\"Retro\",\"Vintage\",\"80s\",\"Estilo\"]",
+      "imageUrl": "/uploads/prints/1787859682172_c9sia3.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T12:49:56.554+00:00"
+    },
+    {
+      "id": "fe1a2852-3af6-468e-aeca-a7e4db0b53fc",
+      "code": "EST-010",
+      "name": "TODO MUNDO ODEIA O CHRIS",
+      "tags": "[\"Tech\",\"Programação\",\"Coffee\",\"Geek\"]",
+      "imageUrl": "/uploads/prints/1787859712705_njzqm7.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T12:49:56.572+00:00"
+    },
+    {
+      "id": "e1473d89-23b6-4b98-9ec1-b5123e44f53f",
+      "code": "EST-011",
+      "name": "TIGRE 2",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787859772905_fjlopk.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T19:43:00.891+00:00"
+    },
+    {
+      "id": "705c4d5f-a777-46c3-9cf1-b76ede716dd4",
+      "code": "EST-012",
+      "name": "PEIXE AZUL",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787859830262_j90c8r.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T19:44:05.489+00:00"
+    },
+    {
+      "id": "47ec72a2-1625-4cae-a64a-e1679f943079",
+      "code": "EST-013",
+      "name": "PERNA LONGA",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787859932098_wgkaq1.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T19:45:39.803+00:00"
+    },
+    {
+      "id": "a2b48def-a849-461a-b08c-729d3443191c",
+      "code": "EST-014",
+      "name": "HOMEM ARANHA",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787859962010_6nn6qu.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T19:46:13.273+00:00"
+    },
+    {
+      "id": "c67d3e37-dee6-4d15-b0a1-e255be917899",
+      "code": "EST-015",
+      "name": "AMPULHETA 2",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787860021681_p3iakw.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T19:47:11.812+00:00"
+    },
+    {
+      "id": "fbb7361c-bf33-45eb-823e-7b93baa58aec",
+      "code": "EST-016",
+      "name": "LEÃO",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787860071664_rwrmkg.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T19:48:09.546+00:00"
+    },
+    {
+      "id": "4bc0cbd3-868a-43bc-9155-b5163fcc7434",
+      "code": "EST-017",
+      "name": "CANECA DRAGÃO",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787860258898_lgx66p.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T19:51:20.131+00:00"
+    },
+    {
+      "id": "53423995-8fe8-46cf-8691-53660ca8b1e4",
+      "code": "EST-018",
+      "name": "CANECA ONÇA",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787860549763_zk95id.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T19:56:00.149+00:00"
+    },
+    {
+      "id": "0685f648-3874-47a5-a26e-bf7330e0c9a4",
+      "code": "EST-019",
+      "name": "CANECA AMPULHETA",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787860612918_qc1c5a.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T19:57:01.542+00:00"
+    },
+    {
+      "id": "b9da21db-7375-4d47-9815-b2ec835dd544",
+      "code": "EST-030",
+      "name": "CANECA PEIXE",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787860651838_z32i7p.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T19:57:43.752+00:00"
+    },
+    {
+      "id": "bf7296f0-8cbc-4f7d-99c6-8d13cebb522c",
+      "code": "EST-031",
+      "name": "CANECA TIGRE",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787860715456_gvfzk6.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T19:58:46.446+00:00"
+    },
+    {
+      "id": "97afc134-091e-47bf-a277-573949ae6b84",
+      "code": "EST-032",
+      "name": "CANECA SOMOS TÃO JOVENS",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787860748166_ua1703.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T20:00:03.643+00:00"
+    },
+    {
+      "id": "3ab38b61-3ac9-4682-ab00-f6ca21440318",
+      "code": "EST-033",
+      "name": "CANECA COBRA VERMELHA",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787860830802_67wwm0.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T20:00:42.985+00:00"
+    },
+    {
+      "id": "75740a1b-3f88-4dc6-96e7-6b5037c8a083",
+      "code": "EST-034",
+      "name": "CANECA LEÃO",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787860890874_41359c.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T20:01:44.832+00:00"
+    },
+    {
+      "id": "2f9ab3a3-bbc4-4f30-a662-cea8e150bde1",
+      "code": "EST-035",
+      "name": "CANECA ZEUS",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787860977601_fben2u.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T20:03:11.149+00:00"
+    },
+    {
+      "id": "ed5e145f-1a26-48d9-8bf9-4d3f5f5b87b7",
+      "code": "EST-036",
+      "name": "CANECA ÁGUA VIVA",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787861033041_6wg07j.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T20:04:03.490+00:00"
+    },
+    {
+      "id": "7a83fc88-d773-4f87-b7c1-2cf4185b697b",
+      "code": "EST-037",
+      "name": "CANECA ÁGUA VIVA 2",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787861099684_nbz80i.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T20:05:16.624+00:00"
+    },
+    {
+      "id": "2cfb6230-c39c-4fd9-8cfb-81435fefbeab",
+      "code": "EST-038",
+      "name": "CANECA ZEUS 2",
+      "tags": "[\"Novo\", \"Exclusivo\"]",
+      "imageUrl": "/uploads/prints/1787861155970_krs4gi.png",
+      "active": 1,
+      "featured": 0,
+      "createdAt": "2026-08-27T20:06:03.827+00:00"
+    }
+  ],
+  "Category": [
+    {
+      "id": "efbda8ae-8170-424b-85ac-bc761af9e076",
+      "name": "Uniformes"
+    },
+    {
+      "id": "aa67fbf7-6fbe-4fb4-a716-a4f6c5196710",
+      "name": "Nono Ano"
+    },
+    {
+      "id": "f04f2f0e-e145-45de-acbc-4c34308c4466",
+      "name": "Esportes & Times"
+    },
+    {
+      "id": "12213e86-3300-452b-ae81-e97beffb11cc",
+      "name": "Terceirão"
+    },
+    {
+      "id": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988",
+      "name": "Formaturas & Escolas"
+    },
+    {
+      "id": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4",
+      "name": "Canecas"
+    },
+    {
+      "id": "06836d56-3c32-473b-a3df-7566086ccefd",
+      "name": "Igrejas & Retiros"
+    },
+    {
+      "id": "a2d02d7a-ac8c-4a6c-b205-2f1e64b42ef9",
+      "name": "Abadás & Carnaval"
+    },
+    {
+      "id": "1a32e22b-420c-49d1-a715-a94607d4dbb0",
+      "name": "Verão & Praia"
+    },
+    {
+      "id": "1b55a1cc-3b11-48ac-a0dc-180350b40104",
+      "name": "Festas & Baladas"
+    }
+  ],
+  "PrintCategory": [
+    {
+      "printId": "2d361753-039a-46d3-8eca-befc7b59eff3",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "2d361753-039a-46d3-8eca-befc7b59eff3",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "2d361753-039a-46d3-8eca-befc7b59eff3",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "b54d80b1-68a5-4a20-a487-5a52bcf84970",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "b54d80b1-68a5-4a20-a487-5a52bcf84970",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "b54d80b1-68a5-4a20-a487-5a52bcf84970",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "3097b336-ff9f-4e6f-bd6b-eee1717421ad",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "3097b336-ff9f-4e6f-bd6b-eee1717421ad",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "3097b336-ff9f-4e6f-bd6b-eee1717421ad",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "00bbb48e-081e-4be6-9386-3c615c6932ad",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "00bbb48e-081e-4be6-9386-3c615c6932ad",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "00bbb48e-081e-4be6-9386-3c615c6932ad",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "6789c6b8-d308-4bde-957c-e783b3663457",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "6789c6b8-d308-4bde-957c-e783b3663457",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "6789c6b8-d308-4bde-957c-e783b3663457",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "f807cc1b-3042-4b6d-a1f0-b90397379416",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "f807cc1b-3042-4b6d-a1f0-b90397379416",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "f807cc1b-3042-4b6d-a1f0-b90397379416",
+      "categoryId": "aa67fbf7-6fbe-4fb4-a716-a4f6c5196710"
+    },
+    {
+      "printId": "19e48f5f-41ee-4e46-a293-fec670f28d0e",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "19e48f5f-41ee-4e46-a293-fec670f28d0e",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "19e48f5f-41ee-4e46-a293-fec670f28d0e",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "70221cad-281b-4789-bf2b-43489f039fce",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "70221cad-281b-4789-bf2b-43489f039fce",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "70221cad-281b-4789-bf2b-43489f039fce",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "fe1a2852-3af6-468e-aeca-a7e4db0b53fc",
+      "categoryId": "aa67fbf7-6fbe-4fb4-a716-a4f6c5196710"
+    },
+    {
+      "printId": "fe1a2852-3af6-468e-aeca-a7e4db0b53fc",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "fe1a2852-3af6-468e-aeca-a7e4db0b53fc",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "2cfb6230-c39c-4fd9-8cfb-81435fefbeab",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "2cfb6230-c39c-4fd9-8cfb-81435fefbeab",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "dd053988-83f3-440b-ac29-5568f7e9e293",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "dd053988-83f3-440b-ac29-5568f7e9e293",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "e1473d89-23b6-4b98-9ec1-b5123e44f53f",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "e1473d89-23b6-4b98-9ec1-b5123e44f53f",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "e1473d89-23b6-4b98-9ec1-b5123e44f53f",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "705c4d5f-a777-46c3-9cf1-b76ede716dd4",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "705c4d5f-a777-46c3-9cf1-b76ede716dd4",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "705c4d5f-a777-46c3-9cf1-b76ede716dd4",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "47ec72a2-1625-4cae-a64a-e1679f943079",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "47ec72a2-1625-4cae-a64a-e1679f943079",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "47ec72a2-1625-4cae-a64a-e1679f943079",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "a2b48def-a849-461a-b08c-729d3443191c",
+      "categoryId": "aa67fbf7-6fbe-4fb4-a716-a4f6c5196710"
+    },
+    {
+      "printId": "a2b48def-a849-461a-b08c-729d3443191c",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "a2b48def-a849-461a-b08c-729d3443191c",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "c67d3e37-dee6-4d15-b0a1-e255be917899",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "c67d3e37-dee6-4d15-b0a1-e255be917899",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "c67d3e37-dee6-4d15-b0a1-e255be917899",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "fbb7361c-bf33-45eb-823e-7b93baa58aec",
+      "categoryId": "efbda8ae-8170-424b-85ac-bc761af9e076"
+    },
+    {
+      "printId": "fbb7361c-bf33-45eb-823e-7b93baa58aec",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "fbb7361c-bf33-45eb-823e-7b93baa58aec",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "4bc0cbd3-868a-43bc-9155-b5163fcc7434",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "4bc0cbd3-868a-43bc-9155-b5163fcc7434",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "4bc0cbd3-868a-43bc-9155-b5163fcc7434",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "53423995-8fe8-46cf-8691-53660ca8b1e4",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "53423995-8fe8-46cf-8691-53660ca8b1e4",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "53423995-8fe8-46cf-8691-53660ca8b1e4",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "0685f648-3874-47a5-a26e-bf7330e0c9a4",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "0685f648-3874-47a5-a26e-bf7330e0c9a4",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "0685f648-3874-47a5-a26e-bf7330e0c9a4",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "b9da21db-7375-4d47-9815-b2ec835dd544",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "b9da21db-7375-4d47-9815-b2ec835dd544",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "b9da21db-7375-4d47-9815-b2ec835dd544",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "bf7296f0-8cbc-4f7d-99c6-8d13cebb522c",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "bf7296f0-8cbc-4f7d-99c6-8d13cebb522c",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "bf7296f0-8cbc-4f7d-99c6-8d13cebb522c",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "97afc134-091e-47bf-a277-573949ae6b84",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "97afc134-091e-47bf-a277-573949ae6b84",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "97afc134-091e-47bf-a277-573949ae6b84",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "3ab38b61-3ac9-4682-ab00-f6ca21440318",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "3ab38b61-3ac9-4682-ab00-f6ca21440318",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "3ab38b61-3ac9-4682-ab00-f6ca21440318",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "75740a1b-3f88-4dc6-96e7-6b5037c8a083",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "75740a1b-3f88-4dc6-96e7-6b5037c8a083",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "75740a1b-3f88-4dc6-96e7-6b5037c8a083",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "2f9ab3a3-bbc4-4f30-a662-cea8e150bde1",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "2f9ab3a3-bbc4-4f30-a662-cea8e150bde1",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "ed5e145f-1a26-48d9-8bf9-4d3f5f5b87b7",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "ed5e145f-1a26-48d9-8bf9-4d3f5f5b87b7",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "ed5e145f-1a26-48d9-8bf9-4d3f5f5b87b7",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    },
+    {
+      "printId": "7a83fc88-d773-4f87-b7c1-2cf4185b697b",
+      "categoryId": "a77387e9-a4f9-48bd-8a64-39ef45ff0de4"
+    },
+    {
+      "printId": "7a83fc88-d773-4f87-b7c1-2cf4185b697b",
+      "categoryId": "12213e86-3300-452b-ae81-e97beffb11cc"
+    },
+    {
+      "printId": "7a83fc88-d773-4f87-b7c1-2cf4185b697b",
+      "categoryId": "d1f0420f-5d6d-4ce6-8fad-0b1e4ec47988"
+    }
+  ],
+  "Quote": [
+    {
+      "id": "879c11d3-fe13-4f03-b142-3dd4820f74bc",
+      "quoteCode": "ORC-2026-000101",
+      "customerName": "João Silva",
+      "whatsapp": "81998877665",
+      "email": "joao.silva@email.com",
+      "city": "Caruaru",
+      "state": "PE",
+      "desiredDate": "2026-10-15",
+      "notes": "Preciso das camisetas para o evento anual da empresa. Gostaria de saber prazo de envio.",
+      "status": "Cancelado",
+      "createdAt": "2026-08-27T12:49:56.866+00:00",
+      "updatedAt": "2026-08-28T05:52:07.070+00:00",
+      "estimatedTotal": 1374
+    }
+  ],
+  "QuoteItem": [
+    {
+      "id": "2b37e083-664d-4712-bf28-2893dd57d84b",
+      "quoteId": "879c11d3-fe13-4f03-b142-3dd4820f74bc",
+      "productId": null,
+      "productName": "Camiseta Personalizada 100% Algodão",
+      "printId": null,
+      "printCode": "EST-001",
+      "printName": null,
+      "quantity": 30,
+      "customizationPositions": "[\"Frente\",\"Costas\"]",
+      "hasCustomArt": 0,
+      "notes": null,
+      "totalPrice": 1374,
+      "unitPrice": 45.8
+    }
+  ],
+  "QuoteSize": [],
+  "UploadedFile": [],
+  "Testimonial": [
+    {
+      "id": "93d87bdb-d891-4f67-92a4-4808d4acdee7",
+      "name": "Anna Laura",
+      "city": "Três Lagoas - MS",
+      "text": "Fizemos pedido de canecas de alumínio para nossa sala de terceirão e ficaram totalmente impecáveis, sem motivos para reclamar.",
+      "rating": 5,
+      "image": null,
+      "active": 1,
+      "createdAt": "2026-08-27T12:49:56.791+00:00"
+    },
+    {
+      "id": "17b822d1-2c70-4143-bbbf-14ac9b53ecf6",
+      "name": "Caio Pelissar",
+      "city": "Andradina - SP",
+      "text": "Pedimos o combo de Camisetas e Canecas, ficaram perfeitos e o pessoal da sala elogiou muito!",
+      "rating": 5,
+      "image": "/uploads/general/1787865909417_a0mmaf.png",
+      "active": 1,
+      "createdAt": "2026-08-27T12:49:56.813+00:00"
+    },
+    {
+      "id": "f3a40fa3-9083-4c8e-b4e1-75c3eca88187",
+      "name": "Julia Baggio",
+      "city": "Andradina - SP",
+      "text": "Excelente suporte para ajuste da nossa arte própria. Os uniformes da nossa turma ficaram impecáveis, todos amaram.",
+      "rating": 5,
+      "image": "/uploads/general/1787865530308_euacrs.jpeg",
+      "active": 1,
+      "createdAt": "2026-08-27T12:49:56.847+00:00"
+    }
+  ],
+  "SiteSetting": [
+    {
+      "key": "company_name",
+      "value": "Tenório Confecções"
+    },
+    {
+      "key": "whatsapp_number",
+      "value": "+55 18 99179-5656"
+    },
+    {
+      "key": "email",
+      "value": "tenorioconfeccoes.of@gmail.com"
+    },
+    {
+      "key": "instagram",
+      "value": "@tenorio_confeccoes"
+    },
+    {
+      "key": "address",
+      "value": "Andradina - SP | Atendemos todo o Brasil"
+    },
+    {
+      "key": "minimum_order",
+      "value": "1 peças"
+    },
+    {
+      "key": "default_lead_time",
+      "value": "7 a 15 dias úteis"
+    },
+    {
+      "key": "whatsapp_message_template",
+      "value": "Olá! Gostaria de solicitar um orçamento na Tenório Confecções."
+    },
+    {
+      "key": "hero_headline",
+      "value": "Personalizamos suas ideias. Produzimos seus momentos."
+    },
+    {
+      "key": "hero_subheadline",
+      "value": "Camisetas, moletons, canecas, abadás, bandeiras e muito mais personalizados para empresas, eventos, equipes e ocasiões especiais."
+    },
+    {
+      "key": "logo_url",
+      "value": "/logo/logo_custom_1787836417654.png"
+    },
+    {
+      "key": "business_hours",
+      "value": "Seg a Sex: 09h às 17h"
+    },
+    {
+      "key": "img_hero_main",
+      "value": "/uploads/general/1787841549051_fsnttk.png"
+    },
+    {
+      "key": "img_cat_camisetas",
+      "value": "/uploads/general/1787841609774_dc4gj0.png"
+    },
+    {
+      "key": "img_cat_moletons",
+      "value": "/uploads/general/1787841620704_11z8y3.png"
+    },
+    {
+      "key": "img_cat_bandeiras",
+      "value": "/uploads/general/1787841652720_lokpca.jpg"
+    },
+    {
+      "key": "img_cat_windbanner",
+      "value": "/uploads/general/1787841657226_8uy2c8.png"
+    },
+    {
+      "key": "img_cat_canecas",
+      "value": "/uploads/general/1787841894665_1jm8u2.jpg"
+    },
+    {
+      "key": "img_cat_abadas",
+      "value": "https://cdn.awsli.com.br/600x700/9/9344/produto/336048477/1-gjnub4m8z9.png"
+    },
+    {
+      "key": "img_cat_uniformes",
+      "value": "/uploads/general/1787842052774_j7s0qn.jpg"
+    },
+    {
+      "key": "img_cat_eventos",
+      "value": "/uploads/general/1787842469522_btv3nx.jpg"
+    },
+    {
+      "key": "img_cat_corporativo",
+      "value": "/uploads/general/1787842904401_eulpzi.jpg"
+    },
+    {
+      "key": "img_cat_outros",
+      "value": "https://cdn.awsli.com.br/400x400/953/953422/produto/366472491/5be8db3d-0710-4793-a11f-b15671ec762b-o93phk22p1.jpeg"
+    },
+    {
+      "key": "img_home_eventos",
+      "value": "/uploads/general/1787848405672_f2kqes.jpeg"
+    },
+    {
+      "key": "portfolio_items",
+      "value": "[{\"id\":\"1787850157730\",\"title\":\"Camisetas Algodão Penteado - Terceirão JBC 2026\",\"category\":\"Uniformes\",\"image\":\"/uploads/general/1787850132514_gwidic.png\"},{\"id\":\"1787850117917\",\"title\":\"Canecas de Alumínio - Terceirão 2026\",\"category\":\"Canecas\",\"image\":\"/uploads/general/1787850094145_l9qr96.png\"},{\"id\":\"1787849610030\",\"title\":\"Ccombo Completo Terceirão - Castilho SP\",\"category\":\"Camiseta + Moletom + Caneca + Bandeira\",\"image\":\"/uploads/general/1787849602073_rzcobj.jpg\"},{\"id\":\"1\",\"title\":\"Camisetas Algodão Penteado - Terceirão 2025\",\"category\":\"Uniformes\",\"image\":\"/uploads/general/1787848843514_hwv9cx.jpeg\"},{\"id\":\"2\",\"title\":\"Canecas de Alumínio - Terceirão 2024\",\"category\":\"Canecas\",\"image\":\"/uploads/general/1787849031387_nru0qs.jpeg\"},{\"id\":\"3\",\"title\":\"Camisetas Algodão Penteado - Terceirão 2025\",\"category\":\"Uniformes\",\"image\":\"/uploads/general/1787849074047_f47n1d.jpeg\"},{\"id\":\"4\",\"title\":\"Canecas de Alumínio - SESI Três Lagoas\",\"category\":\"Canecas\",\"image\":\"/uploads/general/1787849176920_69ec22.jpeg\"},{\"id\":\"5\",\"title\":\"Camisetas Dry Fit Sublimadas - SESI Andradina\",\"category\":\"Uniformes\",\"image\":\"/uploads/general/1787849283999_33o0w3.jpeg\"},{\"id\":\"6\",\"title\":\"Camisetas Dry Fit Sublimadas - SESI Andradina\",\"category\":\"Uniformes\",\"image\":\"/uploads/general/1787849395605_wzg0on.jpeg\"}]"
+    },
+    {
+      "key": "print_categories",
+      "value": "[\"Abadás & Carnaval\",\"Canecas\",\"Esportes & Times\",\"Formaturas & Escolas\",\"Igrejas & Retiros\",\"Nono Ano\",\"Terceirão\",\"Uniformes\"]"
+    },
+    {
+      "key": "desc_cat_camisetas",
+      "value": "Algodão penteado, dry fit e poliéster. Para festas, formaturas, eventos, entre outros."
+    },
+    {
+      "key": "desc_cat_canecas",
+      "value": "Canecas de Alumínido de 300ml a 850ml, ideal para eventos, festas universitárias, festas de formandos, entre outros."
+    },
+    {
+      "key": "desc_cat_abadas",
+      "value": "Sublimação total para blocos, carnaval, festas, micaretas e outros."
+    },
+    {
+      "key": "desc_cat_bandeiras",
+      "value": "Estampadas em poliéster lavável com ilhós. Torcidas, fachadas, turmas, repúblicas universitárias e outros."
+    },
+    {
+      "key": "tag_cat_bandeiras",
+      "value": "Divulgação & Torcida"
+    },
+    {
+      "key": "tag_cat_windbanner",
+      "value": "Visibilidade & Propaganda"
+    },
+    {
+      "key": "tag_cat_uniformes",
+      "value": "Escolares, Universitários e Outros"
+    },
+    {
+      "key": "desc_cat_uniformes",
+      "value": "Camisetas em algodão altamente resistente e reforçado."
+    },
+    {
+      "key": "tag_cat_eventos",
+      "value": "Autoridade"
+    },
+    {
+      "key": "desc_cat_eventos",
+      "value": "Vista-se para congressos, shows, feiras e campeonatos."
+    },
+    {
+      "key": "tag_cat_corporativo",
+      "value": "Empresas e Outros"
+    },
+    {
+      "key": "desc_cat_corporativo",
+      "value": "Uniformes de equipes, corporativos e sociais."
+    },
+    {
+      "key": "tag_cat_outros",
+      "value": "Sob Consulta - Diversos"
+    },
+    {
+      "key": "desc_cat_outros",
+      "value": "Sacochilas, tirantes e produtos sob consulta especial."
+    },
+    {
+      "key": "hero_images",
+      "value": "[\"/uploads/general/1787841549051_fsnttk.png\",\"/uploads/general/1787869335427_hbsrqb.png\",\"/uploads/general/1787869403900_bzma8a.png\",\"/uploads/general/1787869423515_49bo5m.png\",\"/uploads/general/1787869448750_aop63o.png\",\"/uploads/general/1787869479522_i5vkhk.png\",\"/uploads/general/1787869506938_p9ot7o.png\",\"/uploads/general/1787869526251_jrw7qu.png\",\"/uploads/general/1787869543452_92cbq1.png\",\"/uploads/general/1787869573595_qn8zng.png\"]"
+    },
+    {
+      "key": "hero_interval",
+      "value": "4500"
+    }
+  ]
+}
