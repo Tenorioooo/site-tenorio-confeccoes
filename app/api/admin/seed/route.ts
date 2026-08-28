@@ -142,6 +142,20 @@ export async function GET() {
       );
     `);
 
+    // Clean old sample data to avoid unique slug collisions
+    await prisma.quoteSize.deleteMany({}).catch(() => {});
+    await prisma.uploadedFile.deleteMany({}).catch(() => {});
+    await prisma.quoteItem.deleteMany({}).catch(() => {});
+    await prisma.quote.deleteMany({}).catch(() => {});
+    await prisma.printCategory.deleteMany({}).catch(() => {});
+    await prisma.productImage.deleteMany({}).catch(() => {});
+    await prisma.product.deleteMany({}).catch(() => {});
+    await prisma.print.deleteMany({}).catch(() => {});
+    await prisma.category.deleteMany({}).catch(() => {});
+    await prisma.testimonial.deleteMany({}).catch(() => {});
+    await prisma.siteSetting.deleteMany({}).catch(() => {});
+    await prisma.user.deleteMany({}).catch(() => {});
+
     // 1. Users
     for (const u of localData.User || []) {
       await prisma.user.upsert({
