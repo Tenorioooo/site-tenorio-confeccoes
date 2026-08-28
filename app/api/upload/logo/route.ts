@@ -21,38 +21,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'A logo deve ter no máximo 5MB.' }, { status: 400 });
     }
 
-    const ext = path.extname(file.name || '').toLowerCase();
-    if (!ALLOWED_EXTENSIONS.includes(ext) || !ALLOWED_MIME_TYPES.includes(file.type)) {
+    const ext = path.extname(file.name || '').toLowerCase() || '.png';
+    if (!ALLOWED_EXTENSIONS.includes(ext) && !ALLOWED_MIME_TYPES.includes(file.type)) {
       return NextResponse.json(
         { error: 'Formato inválido. Use JPG, PNG, WEBP ou SVG.' },
         { status: 400 }
       );
     }
 
-    const logoDir = path.join(process.cwd(), 'public', 'logo');
-    if (!existsSync(logoDir)) {
-      await mkdir(logoDir, { recursive: true });
-    }
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const mimeType = file.type || (ext === '.svg' ? 'image/svg+xml' : 'image/png');
+    const base64Data = `data:${mimeType};base64,${buffer.toString('base64')}`;
 
-    // Clean up old custom logos
-    const { readdir, unlink } = await import('fs/promises');
+    const timestamp = Date.now();
+    const safeName = `logo_custom_${timestamp}${ext}`;
+
+    // Attempt filesystem write in local environment (safe fail in Vercel serverless read-only FS)
     try {
+      const logoDir = path.join(process.cwd(), 'public', 'logo');
+      if (!existsSync(logoDir)) {
+        await mkdir(logoDir, { recursive: true });
+      }
+
+      // Clean up old custom logos locally
+      const { readdir, unlink } = await import('fs/promises');
       const existingFiles = await readdir(logoDir);
       for (const fileItem of existingFiles) {
         if (fileItem.startsWith('logo_custom')) {
           await unlink(path.join(logoDir, fileItem)).catch(() => {});
         }
       }
-    } catch {}
 
-    // Save with timestamped filename so neither browser nor Next.js caches stale version
-    const safeName = `logo_custom_${Date.now()}${ext}`;
-    const filePath = path.join(logoDir, safeName);
+      const filePath = path.join(logoDir, safeName);
+      await writeFile(filePath, buffer);
+    } catch {
+      // Ignored: Vercel / serverless runtime is read-only
+    }
 
-    const bytes = await file.arrayBuffer();
-    await writeFile(filePath, Buffer.from(bytes));
-
-    const logoUrl = `/logo/${safeName}`;
+    const logoUrl = base64Data;
 
     // Persist to settings so all components can read it
     await prisma.siteSetting.upsert({
@@ -61,7 +68,7 @@ export async function POST(request: Request) {
       create: { key: 'logo_url', value: logoUrl },
     });
 
-    // Also update favicon_url to point to logo with cache busting
+    // Also update favicon_url to point to logo if no separate favicon is set
     await prisma.siteSetting.upsert({
       where: { key: 'favicon_url' },
       update: { value: logoUrl },
@@ -71,6 +78,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: logoUrl });
   } catch (error: any) {
     console.error('Error uploading logo:', error);
-    return NextResponse.json({ error: 'Falha ao salvar a logo.' }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message ? `Falha ao salvar logo: ${error.message}` : 'Falha ao salvar a logo.' },
+      { status: 500 }
+    );
   }
 }

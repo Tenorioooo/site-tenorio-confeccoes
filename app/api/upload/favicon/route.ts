@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir, copyFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
 import { prisma } from '@/lib/db';
@@ -45,35 +45,36 @@ export async function POST(request: Request) {
       );
     }
 
-    const publicDir = path.join(process.cwd(), 'public');
-    const logoDir = path.join(publicDir, 'logo');
-    if (!existsSync(logoDir)) {
-      await mkdir(logoDir, { recursive: true });
-    }
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const finalMime = file.type || (ext === '.svg' ? 'image/svg+xml' : ext === '.ico' ? 'image/x-icon' : 'image/png');
+    const base64Data = `data:${finalMime};base64,${buffer.toString('base64')}`;
 
     const timestamp = Date.now();
     const safeName = `favicon_custom_${timestamp}${ext}`;
-    const filePath = path.join(logoDir, safeName);
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    await writeFile(filePath, buffer);
-
-    // Also update public/icon.png / public/favicon.ico for browser/crawler root requests
+    // Attempt filesystem write in local environment (safe fail in Vercel serverless read-only FS)
     try {
-      if (ext === '.ico') {
-        await writeFile(path.join(publicDir, 'favicon.ico'), buffer);
-      } else if (ext === '.svg') {
-        await writeFile(path.join(publicDir, 'favicon.svg'), buffer);
-      } else {
-        await writeFile(path.join(publicDir, 'icon.png'), buffer);
+      const publicDir = path.join(process.cwd(), 'public');
+      const logoDir = path.join(publicDir, 'logo');
+      if (!existsSync(logoDir)) {
+        await mkdir(logoDir, { recursive: true });
       }
-    } catch (e) {
-      console.warn('Could not mirror root favicon file:', e);
+      const filePath = path.join(logoDir, safeName);
+      await writeFile(filePath, buffer);
+
+      if (ext === '.ico') {
+        await writeFile(path.join(publicDir, 'favicon.ico'), buffer).catch(() => {});
+      } else if (ext === '.svg') {
+        await writeFile(path.join(publicDir, 'favicon.svg'), buffer).catch(() => {});
+      } else {
+        await writeFile(path.join(publicDir, 'icon.png'), buffer).catch(() => {});
+      }
+    } catch {
+      // Ignored: Vercel / serverless runtime is read-only
     }
 
-    const faviconUrl = `/logo/${safeName}?t=${timestamp}`;
+    const faviconUrl = base64Data;
 
     // Persist to site settings
     await prisma.siteSetting.upsert({
