@@ -129,8 +129,22 @@ export default function AdminSettingsPage() {
 
       if (res.ok && data.url) {
         setForm((prev) => ({ ...prev, favicon_url: data.url }));
-        setFaviconPreview(data.url + '?t=' + Date.now());
-        toast.success('Favicon atualizado com sucesso! Atualize a página com Ctrl+F5 para ver.');
+        setFaviconPreview(data.url);
+
+        // Update active browser tab icon in real time
+        try {
+          const head = document.querySelector('head');
+          if (head) {
+            const existingIcons = document.querySelectorAll("link[rel*='icon']");
+            existingIcons.forEach((el) => el.remove());
+            const newIcon = document.createElement('link');
+            newIcon.rel = 'icon';
+            newIcon.href = data.url;
+            head.appendChild(newIcon);
+          }
+        } catch {}
+
+        toast.success('Favicon atualizado com sucesso!');
       } else {
         toast.error(data.error || 'Erro ao enviar favicon.');
         setFaviconPreview(form.favicon_url || null);
