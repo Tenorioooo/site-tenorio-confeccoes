@@ -174,7 +174,7 @@ export async function GET() {
             data: {
               productId: created.id,
               imageUrl: images[i],
-              order: i,
+              position: i,
             },
           });
         }
@@ -184,11 +184,10 @@ export async function GET() {
     // 4. Categories for Prints
     const printCats = ['Igrejas & Religiosos', 'Formatura & Escolar', 'Carnaval & Festas', 'Empresas & Negócios', 'Esportes & Academias'];
     for (const cName of printCats) {
-      const slug = cName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       await prisma.category.upsert({
-        where: { slug },
+        where: { name: cName },
         update: { name: cName },
-        create: { name: cName, slug },
+        create: { name: cName },
       });
     }
 
