@@ -12,6 +12,7 @@ function SuccessContent() {
   const code = searchParams.get('code') || 'ORC-2026-000184';
 
   const [messageText, setMessageText] = useState('');
+  const [waNumber, setWaNumber] = useState('5518991795656');
 
   useEffect(() => {
     try {
@@ -24,14 +25,23 @@ function SuccessContent() {
       }
     } catch (e) {}
 
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.whatsapp_number) {
+          const clean = data.whatsapp_number.replace(/\D/g, '');
+          setWaNumber(clean.startsWith('55') ? clean : `55${clean}`);
+        }
+      })
+      .catch(() => {});
+
     trackEvent('quote_completed', { code });
   }, [code]);
 
   const handleOpenWhatsApp = () => {
     trackEvent('click_whatsapp', { code });
-    const cleanNumber = '5581999999999';
     const textToSend = messageText || `Olá! Fiz um orçamento no site da Tenório Confecções. Meu código de orçamento é ${code}.`;
-    const url = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(textToSend)}`;
+    const url = `https://wa.me/${waNumber}?text=${encodeURIComponent(textToSend)}`;
     window.open(url, '_blank');
   };
 

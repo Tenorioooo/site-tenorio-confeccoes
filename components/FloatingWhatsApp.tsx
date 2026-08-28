@@ -1,14 +1,28 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
 
 export function FloatingWhatsApp() {
+  const [waNumber, setWaNumber] = useState('5518991795656');
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.whatsapp_number) {
+          const clean = data.whatsapp_number.replace(/\D/g, '');
+          setWaNumber(clean.startsWith('55') ? clean : `55${clean}`);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleClick = () => {
     trackEvent('click_whatsapp', { source: 'floating_button' });
     const text = encodeURIComponent('Olá! Gostaria de falar com o atendimento da Tenório Confecções.');
-    window.open(`https://wa.me/5581999999999?text=${text}`, '_blank');
+    window.open(`https://wa.me/${waNumber}?text=${text}`, '_blank');
   };
 
   return (
@@ -24,3 +38,4 @@ export function FloatingWhatsApp() {
     </button>
   );
 }
+

@@ -27,11 +27,11 @@ async function main() {
   // 2. Site Settings
   const settings = [
     { key: 'company_name', value: 'Tenório Confecções' },
-    { key: 'whatsapp_number', value: '5581999999999' },
-    { key: 'email', value: 'contato@tenorioconfeccoes.com.br' },
-    { key: 'instagram', value: '@tenorioconfeccoes' },
-    { key: 'address', value: 'Caruaru - PE | Atendemos todo o Brasil' },
-    { key: 'minimum_order', value: '10 peças' },
+    { key: 'whatsapp_number', value: '+55 18 99179-5656' },
+    { key: 'email', value: 'tenorioconfeccoes.of@gmail.com' },
+    { key: 'instagram', value: '@tenorio_confeccoes' },
+    { key: 'address', value: 'Andradina - SP | Atendemos todo o Brasil' },
+    { key: 'minimum_order', value: '1 peças' },
     { key: 'default_lead_time', value: '7 a 15 dias úteis' },
     { key: 'whatsapp_message_template', value: 'Olá! Gostaria de solicitar um orçamento na Tenório Confecções.' },
     { key: 'hero_headline', value: 'Personalizamos suas ideias. Produzimos seus momentos.' },

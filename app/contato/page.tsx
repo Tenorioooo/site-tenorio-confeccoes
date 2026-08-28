@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Phone, Mail, MapPin, Clock, Send, MessageCircle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -11,6 +11,25 @@ export default function ContactPage() {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
 
+  const [settings, setSettings] = useState({
+    whatsapp_number: '+55 18 99179-5656',
+    email: 'tenorioconfeccoes.of@gmail.com',
+    address: 'Andradina - SP | Atendemos todo o Brasil',
+    business_hours: 'Segunda a Sexta: 09h às 17h',
+  });
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setSettings((prev) => ({ ...prev, ...data }));
+      })
+      .catch(() => {});
+  }, []);
+
+  const rawWa = (settings.whatsapp_number || '5518991795656').replace(/\D/g, '');
+  const waNumber = rawWa.startsWith('55') ? rawWa : `55${rawWa}`;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !whatsapp || !message) {
@@ -19,7 +38,7 @@ export default function ContactPage() {
     }
 
     const text = `*CONTATO PELO SITE — TENÓRIO CONFECÇÕES*\n• Nome: ${name}\n• WhatsApp: ${whatsapp}\n• Assunto: ${subject || 'Dúvida Geral'}\n• Mensagem: ${message}`;
-    window.open(`https://wa.me/5581999999999?text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`, '_blank');
     toast.success('Mensagem encaminhada para o WhatsApp!');
   };
 
@@ -49,7 +68,7 @@ export default function ContactPage() {
 
               <div className="space-y-4 text-sm text-slate-300">
                 <a
-                  href="https://wa.me/5581999999999"
+                  href={`https://wa.me/${waNumber}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800 hover:border-emerald-500/50 transition-all group"
@@ -60,13 +79,13 @@ export default function ContactPage() {
                   <div>
                     <span className="text-xs text-slate-500 block">WhatsApp Comercial</span>
                     <span className="font-bold text-white group-hover:text-emerald-400 transition-colors">
-                      (81) 99999-9999
+                      {settings.whatsapp_number || '+55 18 99179-5656'}
                     </span>
                   </div>
                 </a>
 
                 <a
-                  href="mailto:contato@tenorioconfeccoes.com.br"
+                  href={`mailto:${settings.email || 'tenorioconfeccoes.of@gmail.com'}`}
                   className="flex items-center gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800 hover:border-blue-500/50 transition-all group"
                 >
                   <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl group-hover:scale-110 transition-transform">
@@ -74,8 +93,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <span className="text-xs text-slate-500 block">E-mail Direto</span>
-                    <span className="font-bold text-white group-hover:text-blue-400 transition-colors">
-                      contato@tenorioconfeccoes.com.br
+                    <span className="font-bold text-white group-hover:text-blue-400 transition-colors break-all">
+                      {settings.email || 'tenorioconfeccoes.of@gmail.com'}
                     </span>
                   </div>
                 </a>
@@ -86,7 +105,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <span className="text-xs text-slate-500 block">Localização</span>
-                    <span className="font-bold text-white">Caruaru - PE | Atendimento Nacional</span>
+                    <span className="font-bold text-white">{settings.address || 'Andradina - SP | Atendemos todo o Brasil'}</span>
                   </div>
                 </div>
 
@@ -96,7 +115,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <span className="text-xs text-slate-500 block">Horário de Funcionamento</span>
-                    <span className="font-bold text-white">Segunda a Sexta: 08h às 18h</span>
+                    <span className="font-bold text-white">{settings.business_hours || 'Segunda a Sexta: 09h às 17h'}</span>
                   </div>
                 </div>
               </div>
@@ -128,7 +147,7 @@ export default function ContactPage() {
                   <input
                     type="text"
                     required
-                    placeholder="(81) 99999-9999"
+                    placeholder="(18) 99179-5656"
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:border-blue-400 focus:outline-none"

@@ -17,10 +17,10 @@ interface SiteSettings {
 
 export function Footer() {
   const [settings, setSettings] = useState<SiteSettings>({
-    whatsapp_number: '5581999999999',
-    email: 'contato@tenorioconfeccoes.com.br',
-    address: 'Caruaru - PE | Atendimento Nacional',
-    instagram: '@tenorioconfeccoes',
+    whatsapp_number: '+55 18 99179-5656',
+    email: 'tenorioconfeccoes.of@gmail.com',
+    address: 'Andradina - SP | Atendemos todo o Brasil',
+    instagram: '@tenorio_confeccoes',
     company_name: 'Tenório Confecções',
   });
 
@@ -34,11 +34,11 @@ export function Footer() {
   }, []);
 
   // Normalize the WhatsApp number: strip non-digits, ensure it starts with 55
-  const rawWa = (settings.whatsapp_number || '5581999999999').replace(/\D/g, '');
+  const rawWa = (settings.whatsapp_number || '5518991795656').replace(/\D/g, '');
   const waNumber = rawWa.startsWith('55') ? rawWa : `55${rawWa}`;
 
   // Normalize Instagram handle for URL
-  const igHandle = (settings.instagram || '@tenorioconfeccoes').replace('@', '');
+  const igHandle = (settings.instagram || '@tenorio_confeccoes').replace('@', '');
 
   return (
     <footer className="bg-slate-950 text-slate-300 border-t border-slate-800 pt-16 pb-12">
@@ -187,25 +187,25 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="hover:text-emerald-400 transition-colors"
                 >
-                  WhatsApp: {settings.whatsapp_number || '(81) 99999-9999'}
+                  WhatsApp: {settings.whatsapp_number || '+55 18 99179-5656'}
                 </a>
               </li>
               <li className="flex items-start gap-2.5">
                 <Mail className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
                 <a
-                  href={`mailto:${settings.email}`}
+                  href={`mailto:${settings.email || 'tenorioconfeccoes.of@gmail.com'}`}
                   className="hover:text-blue-400 transition-colors break-all"
                 >
-                  {settings.email || 'contato@tenorioconfeccoes.com.br'}
+                  {settings.email || 'tenorioconfeccoes.of@gmail.com'}
                 </a>
               </li>
               <li className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
-                <span>{settings.address || 'Caruaru - PE | Atendimento Nacional'}</span>
+                <span>{settings.address || 'Andradina - SP | Atendemos todo o Brasil'}</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <Clock className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
-                <span>{settings.business_hours || 'Seg a Sex: 08h às 18h'}</span>
+                <span>{settings.business_hours || 'Seg a Sex: 09h às 17h'}</span>
               </li>
             </ul>
           </div>

@@ -33,12 +33,12 @@ export default function AdminSettingsPage() {
 
   const [form, setForm] = useState({
     company_name: 'Tenório Confecções',
-    whatsapp_number: '5581999999999',
-    email: 'contato@tenorioconfeccoes.com.br',
-    instagram: '@tenorioconfeccoes',
-    address: 'Caruaru - PE | Atendemos todo o Brasil',
-    business_hours: 'Seg a Sex: 08h às 18h',
-    minimum_order: '10 peças',
+    whatsapp_number: '+55 18 99179-5656',
+    email: 'tenorioconfeccoes.of@gmail.com',
+    instagram: '@tenorio_confeccoes',
+    address: 'Andradina - SP | Atendemos todo o Brasil',
+    business_hours: 'Seg a Sex: 09h às 17h',
+    minimum_order: '1 peças',
     default_lead_time: '7 a 15 dias úteis',
     whatsapp_message_template: 'Olá! Gostaria de solicitar um orçamento na Tenório Confecções.',
     logo_url: '',

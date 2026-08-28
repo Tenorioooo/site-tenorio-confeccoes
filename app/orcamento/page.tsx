@@ -394,7 +394,7 @@ export default function QuotePage() {
                     <input
                       type="text"
                       required
-                      placeholder="Ex: (81) 99999-9999"
+                      placeholder="Ex: (18) 99179-5656"
                       value={whatsapp}
                       onChange={(e) => setWhatsapp(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-3 text-white focus:border-blue-400 focus:outline-none"
@@ -409,7 +409,7 @@ export default function QuotePage() {
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <input
                       type="email"
-                      placeholder="Ex: joao@email.com"
+                      placeholder="Ex: seuemail@exemplo.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-3 text-white focus:border-blue-400 focus:outline-none"
@@ -423,7 +423,7 @@ export default function QuotePage() {
                     <label className="text-slate-300 font-bold block">Cidade</label>
                     <input
                       type="text"
-                      placeholder="Ex: Caruaru"
+                      placeholder="Ex: Andradina"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-white focus:border-blue-400 focus:outline-none"
