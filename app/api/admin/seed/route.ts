@@ -6,6 +6,142 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    // 0. Auto-Create PostgreSQL Tables if they don't exist
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "User" (
+        "id" TEXT PRIMARY KEY,
+        "name" TEXT NOT NULL,
+        "email" TEXT UNIQUE NOT NULL,
+        "password" TEXT NOT NULL,
+        "role" TEXT NOT NULL DEFAULT 'admin',
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS "Product" (
+        "id" TEXT PRIMARY KEY,
+        "name" TEXT NOT NULL,
+        "slug" TEXT UNIQUE NOT NULL,
+        "category" TEXT NOT NULL,
+        "description" TEXT NOT NULL,
+        "details" TEXT,
+        "active" BOOLEAN NOT NULL DEFAULT true,
+        "featured" BOOLEAN NOT NULL DEFAULT false,
+        "availableSizes" TEXT NOT NULL DEFAULT '["PP","P","M","G","GG","XGG"]',
+        "availableColors" TEXT NOT NULL DEFAULT '["Branco","Preto","Azul Marinho","Cinza","Vermelho","Amarelo"]',
+        "customizationPositions" TEXT DEFAULT '["Frente","Costas","Manga Direita","Manga Esquerda","Nome Individual","Número Individual","Outro Local"]',
+        "printTechniques" TEXT DEFAULT 'Silk Screen, Sublimação, DTF HD, Bordado',
+        "leadTime" TEXT DEFAULT '7 a 15 dias úteis',
+        "minQuantity" TEXT DEFAULT '10 unidades',
+        "priceRange" TEXT DEFAULT 'Consulte valor por quantidade',
+        "basePrice" DOUBLE PRECISION DEFAULT 0,
+        "pricingTiers" TEXT DEFAULT '[]',
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS "ProductImage" (
+        "id" TEXT PRIMARY KEY,
+        "productId" TEXT NOT NULL,
+        "imageUrl" TEXT NOT NULL,
+        "position" INTEGER NOT NULL DEFAULT 0,
+        CONSTRAINT "ProductImage_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS "Print" (
+        "id" TEXT PRIMARY KEY,
+        "code" TEXT UNIQUE NOT NULL,
+        "name" TEXT NOT NULL,
+        "tags" TEXT NOT NULL DEFAULT '[]',
+        "imageUrl" TEXT NOT NULL,
+        "active" BOOLEAN NOT NULL DEFAULT true,
+        "featured" BOOLEAN NOT NULL DEFAULT false,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS "Category" (
+        "id" TEXT PRIMARY KEY,
+        "name" TEXT UNIQUE NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS "PrintCategory" (
+        "printId" TEXT NOT NULL,
+        "categoryId" TEXT NOT NULL,
+        PRIMARY KEY ("printId", "categoryId"),
+        CONSTRAINT "PrintCategory_printId_fkey" FOREIGN KEY ("printId") REFERENCES "Print"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "PrintCategory_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS "Quote" (
+        "id" TEXT PRIMARY KEY,
+        "quoteCode" TEXT UNIQUE NOT NULL,
+        "customerName" TEXT NOT NULL,
+        "whatsapp" TEXT NOT NULL,
+        "email" TEXT,
+        "city" TEXT,
+        "state" TEXT,
+        "desiredDate" TEXT,
+        "notes" TEXT,
+        "estimatedTotal" DOUBLE PRECISION DEFAULT 0,
+        "status" TEXT NOT NULL DEFAULT 'Recebido',
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS "QuoteItem" (
+        "id" TEXT PRIMARY KEY,
+        "quoteId" TEXT NOT NULL,
+        "productId" TEXT,
+        "productName" TEXT NOT NULL,
+        "printId" TEXT,
+        "printCode" TEXT,
+        "printName" TEXT,
+        "quantity" INTEGER NOT NULL,
+        "unitPrice" DOUBLE PRECISION DEFAULT 0,
+        "totalPrice" DOUBLE PRECISION DEFAULT 0,
+        "customizationPositions" TEXT NOT NULL DEFAULT '["Frente"]',
+        "hasCustomArt" BOOLEAN NOT NULL DEFAULT false,
+        "notes" TEXT,
+        CONSTRAINT "QuoteItem_quoteId_fkey" FOREIGN KEY ("quoteId") REFERENCES "Quote"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "QuoteItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE,
+        CONSTRAINT "QuoteItem_printId_fkey" FOREIGN KEY ("printId") REFERENCES "Print"("id") ON DELETE SET NULL ON UPDATE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS "QuoteSize" (
+        "id" TEXT PRIMARY KEY,
+        "quoteItemId" TEXT NOT NULL,
+        "size" TEXT NOT NULL,
+        "quantity" INTEGER NOT NULL,
+        CONSTRAINT "QuoteSize_quoteItemId_fkey" FOREIGN KEY ("quoteItemId") REFERENCES "QuoteItem"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS "UploadedFile" (
+        "id" TEXT PRIMARY KEY,
+        "quoteId" TEXT NOT NULL,
+        "fileUrl" TEXT NOT NULL,
+        "originalName" TEXT NOT NULL,
+        "mimeType" TEXT NOT NULL,
+        "size" INTEGER NOT NULL,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "UploadedFile_quoteId_fkey" FOREIGN KEY ("quoteId") REFERENCES "Quote"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS "Testimonial" (
+        "id" TEXT PRIMARY KEY,
+        "name" TEXT NOT NULL,
+        "city" TEXT NOT NULL,
+        "text" TEXT NOT NULL,
+        "rating" INTEGER NOT NULL DEFAULT 5,
+        "image" TEXT,
+        "active" BOOLEAN NOT NULL DEFAULT true,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS "SiteSetting" (
+        "key" TEXT PRIMARY KEY,
+        "value" TEXT NOT NULL
+      );
+    `);
+
     // 1. Admin User
     const hashedPassword = await bcrypt.hash('admin123', 10);
     await prisma.user.upsert({
@@ -193,7 +329,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      message: 'Banco de dados populado com sucesso com os dados iniciais da Tenório Confecções!',
+      message: 'Tabelas criadas e banco de dados PostgreSQL populado com sucesso com os dados da Tenório Confecções!',
       counts: {
         products: products.length,
         settings: settings.length,
