@@ -270,17 +270,24 @@ export default function ChatbotAdminTab() {
     }
   };
 
-  // Carregar configurações de notificação do site e do bot
+  // Carregar configurações de notificação do site
   const carregarConfiguracoes = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/chatbot/config', { cache: 'no-store' });
+      const res = await fetch('/api/settings', { cache: 'no-store' });
       if (res.ok) {
-        const json = await res.json();
-        if (json.config) {
-          if (json.config.adminPhone) setAdminPhone(json.config.adminPhone);
-          setNotifHumano(json.config.notificarAtendimentoHumano !== false);
-          setNotifOrcamento(json.config.notificarNovoOrcamento !== false);
-          setNotifPush(json.config.notificarPushWeb !== false);
+        const data = await res.json();
+        if (data.chatbot_notification_config) {
+          const cfg = typeof data.chatbot_notification_config === 'string'
+            ? JSON.parse(data.chatbot_notification_config)
+            : data.chatbot_notification_config;
+          if (cfg.adminPhone) setAdminPhone(cfg.adminPhone);
+          setNotifHumano(cfg.notificarAtendimentoHumano !== false);
+          setNotifOrcamento(cfg.notificarNovoOrcamento !== false);
+          setNotifPush(cfg.notificarPushWeb !== false);
+        } else if (data.chatbot_admin_phone) {
+          setAdminPhone(data.chatbot_admin_phone);
+        } else if (data.whatsapp_number) {
+          setAdminPhone((prev) => prev || data.whatsapp_number.replace(/[^0-9]/g, ''));
         }
       }
     } catch (e) {}
@@ -289,30 +296,29 @@ export default function ChatbotAdminTab() {
   const salvarConfiguracoesNotificacao = async () => {
     try {
       setActionLoading(true);
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.tenorioconfeccoes.shop';
       const payload = {
         adminPhone,
         notificarAtendimentoHumano: notifHumano,
         notificarNovoOrcamento: notifOrcamento,
-        notificarPushWeb: notifPush,
-        siteApiUrl: `${origin}/api/notifications/send`
+        notificarPushWeb: notifPush
       };
 
-      // Salva no banco de dados do site (funciona no celular 4G/5G/WiFi de qualquer lugar)
-      const resSite = await fetch('/api/admin/chatbot/config', {
-        method: 'POST',
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          chatbot_notification_config: JSON.stringify(payload),
+          chatbot_admin_phone: adminPhone
+        })
       });
 
-      if (resSite.ok) {
+      if (res.ok) {
         toast.success('✅ Configurações salvas com sucesso no sistema!');
       } else {
-        const errJson = await resSite.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Falha ao salvar no banco');
+        throw new Error('Falha ao salvar configurações');
       }
     } catch (e: any) {
-      toast.error('Erro ao salvar: ' + e.message);
+      toast.error('Erro ao salvar: ' + (e?.message || 'Falha de rede'));
     } finally {
       setActionLoading(false);
     }
