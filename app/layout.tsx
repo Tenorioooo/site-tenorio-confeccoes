@@ -66,6 +66,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="icon" href={faviconUrl} />
         <link rel="shortcut icon" href={faviconUrl} />
         <link rel="apple-touch-icon" href={faviconUrl} />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Tenório Admin" />
       </head>
       <body className="min-h-full flex flex-col justify-between selection:bg-blue-500 selection:text-slate-950">
         <CartProvider>
