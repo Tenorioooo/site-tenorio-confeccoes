@@ -127,24 +127,20 @@ export default function ChatbotAdminTab() {
   const [coresInput, setCoresInput] = useState('');
   const [variacoesInput, setVariacoesInput] = useState('');
 
+  const configLoadedRef = React.useRef(false);
+
   const carregarStatus = useCallback(async () => {
     try {
       const res = await fetch(`${botUrl}/api/status`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Servidor do bot offline');
       const json: StatusResponse = await res.json();
       setData(json);
-      if (json.notificacoes) {
-        if (adminPhone === '') setAdminPhone(json.notificacoes.adminPhone || '');
-        setNotifHumano(json.notificacoes.notificarAtendimentoHumano !== false);
-        setNotifOrcamento(json.notificacoes.notificarNovoOrcamento !== false);
-        setNotifPush(json.notificacoes.notificarPushWeb !== false);
-      }
     } catch (e: any) {
       // Se falhar a conexão direta, mantém os dados anteriores ou null
     } finally {
       setLoading(false);
     }
-  }, [botUrl, adminPhone]);
+  }, [botUrl]);
 
   const carregarTabela = useCallback(async () => {
     try {
@@ -156,8 +152,9 @@ export default function ChatbotAdminTab() {
     } catch (e) {}
   }, [botUrl]);
 
-  // Carregar configurações de notificação do site
+  // Carregar configurações de notificação do site (apenas uma vez no carregamento inicial)
   const carregarConfiguracoes = useCallback(async () => {
+    if (configLoadedRef.current) return;
     try {
       const res = await fetch('/api/settings', { cache: 'no-store' });
       if (res.ok) {
@@ -172,9 +169,8 @@ export default function ChatbotAdminTab() {
           setNotifPush(cfg.notificarPushWeb !== false);
         } else if (data.chatbot_admin_phone) {
           setAdminPhone(data.chatbot_admin_phone);
-        } else if (data.whatsapp_number) {
-          setAdminPhone((prev) => prev || data.whatsapp_number.replace(/[^0-9]/g, ''));
         }
+        configLoadedRef.current = true;
       }
     } catch (e) {}
   }, []);
