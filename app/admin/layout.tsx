@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Package, Palette, Tag, FileSpreadsheet, Settings, LogOut, ExternalLink, ImageIcon, Briefcase, MessageSquare, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Bot, Package, Palette, Tag, FileSpreadsheet, Settings, LogOut, ExternalLink, ImageIcon, Briefcase, MessageSquare, Menu, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminInactivityWatcher } from '@/components/AdminInactivityWatcher';
 
@@ -41,7 +41,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Portfólio', href: '/admin/portfolio', icon: Briefcase },
     { name: 'Depoimentos', href: '/admin/depoimentos', icon: MessageSquare },
     { name: 'Imagens & Capas', href: '/admin/imagens', icon: ImageIcon },
-    { name: 'Orçamentos', href: '/admin/orcamentos', icon: FileSpreadsheet },
+    {
+      name: 'Orçamentos',
+      href: '/admin/orcamentos',
+      icon: FileSpreadsheet,
+    },
+    {
+      name: 'Chat Bot',
+      href: '/admin/chatbot',
+      icon: Bot,
+    },
     { name: 'Configurações', href: '/admin/configuracoes', icon: Settings },
   ];
 
