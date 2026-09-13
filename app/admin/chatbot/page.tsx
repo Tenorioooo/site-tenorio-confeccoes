@@ -156,6 +156,29 @@ export default function ChatbotAdminTab() {
     } catch (e) {}
   }, [botUrl]);
 
+  // Carregar configurações de notificação do site
+  const carregarConfiguracoes = useCallback(async () => {
+    try {
+      const res = await fetch('/api/settings', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.chatbot_notification_config) {
+          const cfg = typeof data.chatbot_notification_config === 'string'
+            ? JSON.parse(data.chatbot_notification_config)
+            : data.chatbot_notification_config;
+          if (cfg.adminPhone) setAdminPhone(cfg.adminPhone);
+          setNotifHumano(cfg.notificarAtendimentoHumano !== false);
+          setNotifOrcamento(cfg.notificarNovoOrcamento !== false);
+          setNotifPush(cfg.notificarPushWeb !== false);
+        } else if (data.chatbot_admin_phone) {
+          setAdminPhone(data.chatbot_admin_phone);
+        } else if (data.whatsapp_number) {
+          setAdminPhone((prev) => prev || data.whatsapp_number.replace(/[^0-9]/g, ''));
+        }
+      }
+    } catch (e) {}
+  }, []);
+
   // Verificar suporte e status de Push no Navegador / iPhone
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -269,29 +292,6 @@ export default function ChatbotAdminTab() {
       setActionLoading(false);
     }
   };
-
-  // Carregar configurações de notificação do site
-  const carregarConfiguracoes = useCallback(async () => {
-    try {
-      const res = await fetch('/api/settings', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.chatbot_notification_config) {
-          const cfg = typeof data.chatbot_notification_config === 'string'
-            ? JSON.parse(data.chatbot_notification_config)
-            : data.chatbot_notification_config;
-          if (cfg.adminPhone) setAdminPhone(cfg.adminPhone);
-          setNotifHumano(cfg.notificarAtendimentoHumano !== false);
-          setNotifOrcamento(cfg.notificarNovoOrcamento !== false);
-          setNotifPush(cfg.notificarPushWeb !== false);
-        } else if (data.chatbot_admin_phone) {
-          setAdminPhone(data.chatbot_admin_phone);
-        } else if (data.whatsapp_number) {
-          setAdminPhone((prev) => prev || data.whatsapp_number.replace(/[^0-9]/g, ''));
-        }
-      }
-    } catch (e) {}
-  }, []);
 
   const salvarConfiguracoesNotificacao = async () => {
     try {
