@@ -1,6 +1,5 @@
 import webpush from 'web-push';
-import fs from 'fs';
-import path from 'path';
+import { prisma } from '@/lib/db';
 
 export const VAPID_PUBLIC_KEY = 'BFtl7Ov362iDtyoRhavICgBjLhkMa5k0dCyCDFZjIPKHP2brYM9nrYtmGnMD7fvJ7E-wjjS_E5bhfPFgFEY-5BU';
 export const VAPID_PRIVATE_KEY = 'ltMdkhqlJ9Abh9rpDsdUyzXXEImAG4CvkIL3vJ1swkU';
@@ -12,15 +11,6 @@ webpush.setVapidDetails(
   VAPID_PRIVATE_KEY
 );
 
-const SUBSCRIPTIONS_FILE = path.join(process.cwd(), 'data', 'push-subscriptions.json');
-
-function ensureDirExists(filePath: string) {
-  const dirname = path.dirname(filePath);
-  if (!fs.existsSync(dirname)) {
-    fs.mkdirSync(dirname, { recursive: true });
-  }
-}
-
 export interface StoredSubscription {
   id: string;
   subscription: webpush.PushSubscription;
@@ -28,34 +18,48 @@ export interface StoredSubscription {
   createdAt: string;
 }
 
-export function getSubscriptions(): StoredSubscription[] {
+// Armazenamento no Banco de Dados (SiteSetting no Postgres/Neon) com fallback em memória
+let memorySubscriptions: StoredSubscription[] = [];
+
+export async function getSubscriptions(): Promise<StoredSubscription[]> {
   try {
-    ensureDirExists(SUBSCRIPTIONS_FILE);
-    if (!fs.existsSync(SUBSCRIPTIONS_FILE)) {
-      fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify([]));
-      return [];
+    const setting = await prisma.siteSetting.findUnique({
+      where: { key: 'push_subscriptions' }
+    });
+    if (setting?.value) {
+      const parsed = JSON.parse(setting.value);
+      memorySubscriptions = parsed;
+      return parsed;
     }
-    const data = fs.readFileSync(SUBSCRIPTIONS_FILE, 'utf-8');
-    return JSON.parse(data || '[]');
   } catch (err) {
-    console.error('Erro ao ler push-subscriptions.json:', err);
-    return [];
+    console.warn('Falha ao ler subscriptions do banco, usando memória:', err);
   }
+  return memorySubscriptions;
 }
 
-export function saveSubscription(sub: webpush.PushSubscription, userAgent?: string): boolean {
+export async function saveSubscription(sub: webpush.PushSubscription, userAgent?: string): Promise<boolean> {
   try {
-    const list = getSubscriptions();
+    const list = await getSubscriptions();
     const endpoint = sub.endpoint;
     const filtered = list.filter((s) => s.subscription.endpoint !== endpoint);
     filtered.push({
       id: Date.now().toString(),
       subscription: sub,
-      userAgent: userAgent || 'Desconhecido',
+      userAgent: userAgent || 'iPhone / Dispositivo',
       createdAt: new Date().toISOString()
     });
-    ensureDirExists(SUBSCRIPTIONS_FILE);
-    fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(filtered, null, 2));
+
+    memorySubscriptions = filtered;
+
+    try {
+      await prisma.siteSetting.upsert({
+        where: { key: 'push_subscriptions' },
+        create: { key: 'push_subscriptions', value: JSON.stringify(filtered) },
+        update: { value: JSON.stringify(filtered) }
+      });
+    } catch (dbErr) {
+      console.warn('Erro ao salvar subscription no banco (persistindo em memória):', dbErr);
+    }
     return true;
   } catch (err) {
     console.error('Erro ao salvar subscription:', err);
@@ -63,12 +67,18 @@ export function saveSubscription(sub: webpush.PushSubscription, userAgent?: stri
   }
 }
 
-export function removeSubscription(endpoint: string): void {
+export async function removeSubscription(endpoint: string): Promise<void> {
   try {
-    const list = getSubscriptions();
+    const list = await getSubscriptions();
     const filtered = list.filter((s) => s.subscription.endpoint !== endpoint);
-    ensureDirExists(SUBSCRIPTIONS_FILE);
-    fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(filtered, null, 2));
+    memorySubscriptions = filtered;
+    try {
+      await prisma.siteSetting.upsert({
+        where: { key: 'push_subscriptions' },
+        create: { key: 'push_subscriptions', value: JSON.stringify(filtered) },
+        update: { value: JSON.stringify(filtered) }
+      });
+    } catch (e) {}
   } catch (err) {
     console.error('Erro ao remover subscription:', err);
   }
@@ -81,7 +91,7 @@ export async function sendPushNotification(payload: {
   icon?: string;
   tag?: string;
 }) {
-  const subscriptions = getSubscriptions();
+  const subscriptions = await getSubscriptions();
   if (subscriptions.length === 0) {
     return { success: false, totalSent: 0, message: 'Nenhum dispositivo cadastrado para push' };
   }
@@ -101,8 +111,7 @@ export async function sendPushNotification(payload: {
         return { success: true, endpoint: item.subscription.endpoint };
       } catch (err: any) {
         if (err.statusCode === 410 || err.statusCode === 404) {
-          // Inscrição expirou ou foi cancelada no browser
-          removeSubscription(item.subscription.endpoint);
+          await removeSubscription(item.subscription.endpoint);
         }
         throw err;
       }

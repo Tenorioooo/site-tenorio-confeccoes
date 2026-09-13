@@ -179,6 +179,18 @@ export default function ChatbotAdminTab() {
     return () => clearInterval(interval);
   }, [carregarStatus, carregarTabela]);
 
+  // Função auxiliar para conversão de chave VAPID no padrão iOS/Safari
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
   // Função para Ativar Notificações no iPhone / Navegador
   const ativarNotificacoesPush = async () => {
     if (!('serviceWorker' in navigator) || !('Notification' in window)) {
@@ -192,7 +204,7 @@ export default function ChatbotAdminTab() {
       setPushStatus(permission as any);
 
       if (permission !== 'granted') {
-        toast.error('Permissão de notificações não foi concedida.');
+        toast.error('Permissão de notificações não foi concedida no iOS.');
         return;
       }
 
@@ -204,18 +216,16 @@ export default function ChatbotAdminTab() {
       const vapidRes = await fetch('/api/notifications/vapid-public-key');
       const { publicKey } = await vapidRes.json();
 
-      // Converter VAPID key para Uint8Array
-      const rawData = window.atob(publicKey.replace(/-/g, '+').replace(/_/g, '/'));
-      const outputArray = new Uint8Array(rawData.length);
-      for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-      }
+      const applicationServerKey = urlBase64ToUint8Array(publicKey);
 
       // Inscrever no PushManager
-      const subscription = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: outputArray
-      });
+      let subscription = await reg.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey
+        });
+      }
 
       // Salvar subscription no backend
       const saveRes = await fetch('/api/notifications/subscribe', {
@@ -226,7 +236,7 @@ export default function ChatbotAdminTab() {
 
       if (saveRes.ok) {
         setIsSubscribed(true);
-        toast.success('🎉 Notificações no iPhone ativadas com sucesso!');
+        toast.success('🎉 Notificações no iPhone ativadas com sucesso! Agora você pode clicar em "Testar Push".');
       } else {
         throw new Error('Falha ao registrar inscrição no servidor');
       }
@@ -239,6 +249,10 @@ export default function ChatbotAdminTab() {
   };
 
   const testarNotificacaoPush = async () => {
+    if (!isSubscribed) {
+      toast.info('💡 Toque primeiro no botão azul "Ativar Notificações no iPhone" para registrar este aparelho.');
+      return;
+    }
     try {
       setActionLoading(true);
       const res = await fetch('/api/notifications/test', { method: 'POST' });
