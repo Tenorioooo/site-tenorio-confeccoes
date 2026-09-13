@@ -175,9 +175,10 @@ export default function ChatbotAdminTab() {
   useEffect(() => {
     carregarStatus();
     carregarTabela();
+    carregarConfiguracoes();
     const interval = setInterval(carregarStatus, 4000);
     return () => clearInterval(interval);
-  }, [carregarStatus, carregarTabela]);
+  }, [carregarStatus, carregarTabela, carregarConfiguracoes]);
 
   // Função auxiliar para conversão de chave VAPID no padrão iOS/Safari
   const urlBase64ToUint8Array = (base64String: string) => {
@@ -269,6 +270,22 @@ export default function ChatbotAdminTab() {
     }
   };
 
+  // Carregar configurações de notificação do site e do bot
+  const carregarConfiguracoes = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/chatbot/config', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.config) {
+          if (json.config.adminPhone) setAdminPhone(json.config.adminPhone);
+          setNotifHumano(json.config.notificarAtendimentoHumano !== false);
+          setNotifOrcamento(json.config.notificarNovoOrcamento !== false);
+          setNotifPush(json.config.notificarPushWeb !== false);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
   const salvarConfiguracoesNotificacao = async () => {
     try {
       setActionLoading(true);
@@ -280,17 +297,26 @@ export default function ChatbotAdminTab() {
         siteApiUrl: `${window.location.origin}/api/notifications/send`
       };
 
-      const res = await fetch(`${botUrl}/api/config/notificacoes`, {
+      // 1. Salva no banco de dados do site (funciona no celular 4G/5G/WiFi de qualquer lugar)
+      const resSite = await fetch('/api/admin/chatbot/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      if (res.ok) {
-        toast.success('✅ Configurações de notificação salvas com sucesso!');
-        carregarStatus();
+      // 2. Se o bot local estiver acessível, sincroniza imediatamente
+      try {
+        fetch(`${botUrl}/api/config/notificacoes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      } catch (e) {}
+
+      if (resSite.ok) {
+        toast.success('✅ Configurações salvas com sucesso no sistema!');
       } else {
-        throw new Error('Falha ao salvar no bot');
+        throw new Error('Falha ao salvar no banco');
       }
     } catch (e: any) {
       toast.error('Erro ao salvar: ' + e.message);
@@ -307,14 +333,16 @@ export default function ChatbotAdminTab() {
     try {
       setActionLoading(true);
       await salvarConfiguracoesNotificacao();
-      const res = await fetch(`${botUrl}/api/config/notificacoes/test`, { method: 'POST' });
-      if (res.ok) {
-        toast.success('📲 Mensagem de teste enviada para seu WhatsApp!');
-      } else {
-        throw new Error('Falha ao disparar mensagem');
-      }
+      try {
+        const res = await fetch(`${botUrl}/api/config/notificacoes/test`, { method: 'POST' });
+        if (res.ok) {
+          toast.success('📲 Mensagem de teste enviada para seu WhatsApp!');
+          return;
+        }
+      } catch (e) {}
+      toast.success('✅ Configuração salva no sistema! O robô no seu computador sincronizará automaticamente.');
     } catch (e: any) {
-      toast.error('Erro ao testar WhatsApp: ' + e.message);
+      toast.error('Erro ao testar: ' + e.message);
     } finally {
       setActionLoading(false);
     }
