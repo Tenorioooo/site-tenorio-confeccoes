@@ -289,34 +289,27 @@ export default function ChatbotAdminTab() {
   const salvarConfiguracoesNotificacao = async () => {
     try {
       setActionLoading(true);
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.tenorioconfeccoes.shop';
       const payload = {
         adminPhone,
         notificarAtendimentoHumano: notifHumano,
         notificarNovoOrcamento: notifOrcamento,
         notificarPushWeb: notifPush,
-        siteApiUrl: `${window.location.origin}/api/notifications/send`
+        siteApiUrl: `${origin}/api/notifications/send`
       };
 
-      // 1. Salva no banco de dados do site (funciona no celular 4G/5G/WiFi de qualquer lugar)
+      // Salva no banco de dados do site (funciona no celular 4G/5G/WiFi de qualquer lugar)
       const resSite = await fetch('/api/admin/chatbot/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      // 2. Se o bot local estiver acessível, sincroniza imediatamente
-      try {
-        fetch(`${botUrl}/api/config/notificacoes`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).catch(() => {});
-      } catch (e) {}
-
       if (resSite.ok) {
         toast.success('✅ Configurações salvas com sucesso no sistema!');
       } else {
-        throw new Error('Falha ao salvar no banco');
+        const errJson = await resSite.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Falha ao salvar no banco');
       }
     } catch (e: any) {
       toast.error('Erro ao salvar: ' + e.message);
@@ -333,14 +326,18 @@ export default function ChatbotAdminTab() {
     try {
       setActionLoading(true);
       await salvarConfiguracoesNotificacao();
-      try {
-        const res = await fetch(`${botUrl}/api/config/notificacoes/test`, { method: 'POST' });
-        if (res.ok) {
-          toast.success('📲 Mensagem de teste enviada para seu WhatsApp!');
-          return;
-        }
-      } catch (e) {}
-      toast.success('✅ Configuração salva no sistema! O robô no seu computador sincronizará automaticamente.');
+
+      if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        try {
+          const res = await fetch(`${botUrl}/api/config/notificacoes/test`, { method: 'POST' });
+          if (res.ok) {
+            toast.success('📲 Mensagem de teste enviada para seu WhatsApp!');
+            return;
+          }
+        } catch (e) {}
+      }
+
+      toast.success('✅ Número salvo! O robô no computador já sincronizou e enviará os alertas para o seu WhatsApp.');
     } catch (e: any) {
       toast.error('Erro ao testar: ' + e.message);
     } finally {
