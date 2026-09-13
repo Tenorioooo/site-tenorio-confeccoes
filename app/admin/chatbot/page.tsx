@@ -25,6 +25,12 @@ import {
   Sliders,
   Layers,
   ArrowRight,
+  UserCheck,
+  Users,
+  MessageCircle,
+  ExternalLink,
+  PhoneCall,
+  UserX,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -65,6 +71,16 @@ interface TabelaPrecos {
   };
 }
 
+interface ClienteAguardando {
+  id: string;
+  nome: string;
+  telefone: string;
+  motivo: string;
+  data: string;
+  status: 'AGUARDANDO' | 'ATENDIDO';
+  concluidoEm?: string;
+}
+
 interface BotStatus {
   status: 'INITIALIZING' | 'QR_READY' | 'CONNECTED' | 'DISCONNECTED';
   qrCode: string | null;
@@ -76,6 +92,7 @@ interface BotStatus {
     totalMensagens: number;
     totalOrcamentos: number;
     totalProdutos: number;
+    totalAguardandoHumano: number;
     iniciadoEm: string;
   };
   ultimosOrcamentos: Array<{
@@ -85,16 +102,19 @@ interface BotStatus {
     pecas: number;
     data: string;
   }>;
+  clientesAguardando: ClienteAguardando[];
 }
 
 const API_URL = process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'http://localhost:3001';
 
 export default function AdminChatbotPage() {
-  const [activeTab, setActiveTab] = useState<'status' | 'produtos' | 'config' | 'simulador'>('status');
+  const [activeTab, setActiveTab] = useState<'status' | 'aguardando' | 'produtos' | 'config' | 'simulador'>('status');
   const [botStatus, setBotStatus] = useState<BotStatus | null>(null);
   const [tabela, setTabela] = useState<TabelaPrecos | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchClientes, setSearchClientes] = useState('');
+  const [filtroStatusCliente, setFiltroStatusCliente] = useState<'TODOS' | 'AGUARDANDO' | 'ATENDIDO'>('AGUARDANDO');
 
   // Modal de edição / criação
   const [modalAberto, setModalAberto] = useState(false);
@@ -171,6 +191,32 @@ export default function AdminChatbotPage() {
       }
     } catch (e) {
       toast.error('Erro ao desconectar.');
+    }
+  };
+
+  // Ações de Atendimento Humano
+  const concluirAtendimento = async (id: string) => {
+    try {
+      const res = await fetch(`${API_URL}/api/atendimento/${id}/concluir`, { method: 'POST' });
+      if (res.ok) {
+        toast.success('Atendimento marcado como concluído!');
+        carregarStatus();
+      }
+    } catch (e) {
+      toast.error('Erro ao atualizar status do atendimento.');
+    }
+  };
+
+  const removerAtendimento = async (id: string) => {
+    if (!confirm('Remover este registro da lista?')) return;
+    try {
+      const res = await fetch(`${API_URL}/api/atendimento/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Registro removido com sucesso!');
+        carregarStatus();
+      }
+    } catch (e) {
+      toast.error('Erro ao remover registro.');
     }
   };
 
@@ -292,11 +338,46 @@ export default function AdminChatbotPage() {
     }
   };
 
+  // Filtragem
   const produtosFiltrados = (tabela?.produtos || []).filter(
     (p) =>
       p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.termos.some((t) => t.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const clientesAguardandoLista = (botStatus?.clientesAguardando || []).filter((c) => {
+    const matchBusca =
+      c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
+      c.telefone.includes(searchClientes) ||
+      c.motivo.toLowerCase().includes(searchClientes.toLowerCase());
+
+    if (!matchBusca) return false;
+    if (filtroStatusCliente === 'TODOS') return true;
+    return c.status === filtroStatusCliente;
+  });
+
+  const totalAguardandoHumano = (botStatus?.clientesAguardando || []).filter((c) => c.status === 'AGUARDANDO').length;
+
+  // Formatador de Telefone
+  const formatarTelefone = (tel: string) => {
+    const limpo = tel.replace(/\D/g, '');
+    if (limpo.startsWith('55') && limpo.length >= 12) {
+      const ddd = limpo.slice(2, 4);
+      const numero = limpo.slice(4);
+      return `(${ddd}) ${numero.slice(0, 5)}-${numero.slice(5)}`;
+    }
+    return limpo;
+  };
+
+  // Formatador de Data/Hora
+  const formatarDataHora = (dataIso: string) => {
+    try {
+      const d = new Date(dataIso);
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' (' + d.toLocaleDateString('pt-BR') + ')';
+    } catch (e) {
+      return dataIso;
+    }
+  };
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
@@ -310,7 +391,7 @@ export default function AdminChatbotPage() {
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-white">Central do Chat Bot WhatsApp</h1>
               <p className="text-slate-400 text-xs mt-0.5">
-                Conexão em tempo real, catálogo de preços, regras de desconto e simulação automática de orçamentos.
+                Conexão em tempo real, fila de atendimento humano, catálogo de preços e simulação de orçamentos.
               </p>
             </div>
           </div>
@@ -355,6 +436,23 @@ export default function AdminChatbotPage() {
         </button>
 
         <button
+          onClick={() => setActiveTab('aguardando')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 relative ${
+            activeTab === 'aguardando'
+              ? 'bg-blue-500 text-slate-950 shadow-md font-extrabold'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Atendimento Humano</span>
+          {totalAguardandoHumano > 0 && (
+            <span className="ml-1 px-2 py-0.5 bg-amber-500 text-slate-950 text-[10px] font-black rounded-full animate-bounce">
+              {totalAguardandoHumano}
+            </span>
+          )}
+        </button>
+
+        <button
           onClick={() => setActiveTab('produtos')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'produtos'
@@ -387,7 +485,7 @@ export default function AdminChatbotPage() {
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          <span>Simulador de Orçamento</span>
+          <span>Simulador</span>
         </button>
       </div>
 
@@ -488,6 +586,27 @@ export default function AdminChatbotPage() {
                 </div>
               </div>
 
+              {/* Destaque Atendimento Humano */}
+              <div
+                onClick={() => setActiveTab('aguardando')}
+                className="bg-amber-950/20 border border-amber-800/40 p-4 rounded-xl flex items-center justify-between cursor-pointer hover:bg-amber-950/30 transition"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                    <PhoneCall className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-slate-400">Aguardando Atendimento</p>
+                    <p className="text-lg font-bold text-amber-300">
+                      {totalAguardandoHumano} {totalAguardandoHumano === 1 ? 'cliente' : 'clientes'}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs text-amber-400 font-bold flex items-center gap-1">
+                  Ver Fila &rarr;
+                </span>
+              </div>
+
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
                 <div>
                   <p className="text-[11px] text-slate-400">Produtos no Catálogo</p>
@@ -527,7 +646,175 @@ export default function AdminChatbotPage() {
         </div>
       )}
 
-      {/* ABA 2: PRODUTOS */}
+      {/* ABA 2: CLIENTES AGUARDANDO ATENDIMENTO HUMANO */}
+      {activeTab === 'aguardando' && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+          <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-amber-400" />
+                <span>Fila de Clientes Aguardando Atendimento Humano</span>
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Clientes que solicitaram falar com atendente ou precisam de atendimento personalizado.
+              </p>
+            </div>
+
+            {/* Filtros de Status */}
+            <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 self-start md:self-auto">
+              <button
+                onClick={() => setFiltroStatusCliente('AGUARDANDO')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  filtroStatusCliente === 'AGUARDANDO'
+                    ? 'bg-amber-500 text-slate-950'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Aguardando ({totalAguardandoHumano})
+              </button>
+              <button
+                onClick={() => setFiltroStatusCliente('ATENDIDO')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  filtroStatusCliente === 'ATENDIDO'
+                    ? 'bg-emerald-500 text-slate-950'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Atendidos
+              </button>
+              <button
+                onClick={() => setFiltroStatusCliente('TODOS')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  filtroStatusCliente === 'TODOS'
+                    ? 'bg-blue-500 text-slate-950'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Todos
+              </button>
+            </div>
+          </div>
+
+          {/* Campo de Busca por Cliente */}
+          <div className="relative max-w-md">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+            <input
+              type="text"
+              placeholder="Filtrar por nome, telefone ou motivo..."
+              value={searchClientes}
+              onChange={(e) => setSearchClientes(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
+
+          {/* Lista / Tabela de Clientes */}
+          {clientesAguardandoLista.length > 0 ? (
+            <div className="overflow-x-auto rounded-xl border border-slate-800">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <th className="p-4 font-bold">Cliente</th>
+                    <th className="p-4 font-bold">WhatsApp / Telefone</th>
+                    <th className="p-4 font-bold">Motivo da Solicitação</th>
+                    <th className="p-4 font-bold">Horário</th>
+                    <th className="p-4 font-bold">Status</th>
+                    <th className="p-4 font-bold text-right">Ações Rápidas</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {clientesAguardandoLista.map((cli) => {
+                    const numeroLimpo = cli.telefone.replace(/\D/g, '');
+                    const linkWhatsApp = `https://wa.me/${numeroLimpo}`;
+
+                    return (
+                      <tr key={cli.id} className="hover:bg-slate-800/30 transition">
+                        <td className="p-4 font-bold text-white">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-blue-500/20 text-blue-400 font-bold flex items-center justify-center text-xs">
+                              {cli.nome.charAt(0).toUpperCase()}
+                            </div>
+                            <span>{cli.nome}</span>
+                          </div>
+                        </td>
+
+                        <td className="p-4 font-mono text-slate-300 font-bold">
+                          {formatarTelefone(cli.telefone)}
+                        </td>
+
+                        <td className="p-4 text-slate-300">
+                          <span className="bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-lg text-[11px] text-slate-300">
+                            {cli.motivo}
+                          </span>
+                        </td>
+
+                        <td className="p-4 text-slate-400 text-[11px] font-mono">
+                          {formatarDataHora(cli.data)}
+                        </td>
+
+                        <td className="p-4">
+                          {cli.status === 'AGUARDANDO' ? (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] bg-amber-950 text-amber-400 border border-amber-800/40 px-2.5 py-1 rounded-full font-bold">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                              Aguardando
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] bg-emerald-950 text-emerald-400 border border-emerald-800/40 px-2.5 py-1 rounded-full font-bold">
+                              ✓ Atendido
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="p-4 text-right space-x-2">
+                          {/* Abrir WhatsApp */}
+                          <a
+                            href={linkWhatsApp}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition shadow-sm"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>Abrir Chat</span>
+                          </a>
+
+                          {cli.status === 'AGUARDANDO' && (
+                            <button
+                              onClick={() => concluirAtendimento(cli.id)}
+                              className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-bold transition"
+                              title="Marcar como Atendido"
+                            >
+                              ✓ Concluir
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => removerAtendimento(cli.id)}
+                            className="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-bold transition"
+                            title="Remover da lista"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-12 text-center space-y-3">
+              <div className="w-12 h-12 bg-slate-800 text-slate-500 rounded-full flex items-center justify-center mx-auto">
+                <UserCheck className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-300">Nenhum cliente aguardando no momento!</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Quando algum cliente solicitar um atendente humano pelo WhatsApp (Opção 5), ele aparecerá automaticamente aqui nesta lista.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ABA 3: PRODUTOS */}
       {activeTab === 'produtos' && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
@@ -634,7 +921,7 @@ export default function AdminChatbotPage() {
         </div>
       )}
 
-      {/* ABA 3: DESCONTOS & CONFIGURAÇÕES */}
+      {/* ABA 4: DESCONTOS & CONFIGURAÇÕES */}
       {activeTab === 'config' && tabela && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-8 max-w-4xl">
           <div className="flex justify-between items-center border-b border-slate-800 pb-4">
@@ -759,7 +1046,7 @@ export default function AdminChatbotPage() {
         </div>
       )}
 
-      {/* ABA 4: SIMULADOR */}
+      {/* ABA 5: SIMULADOR */}
       {activeTab === 'simulador' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
