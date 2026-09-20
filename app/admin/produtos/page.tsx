@@ -28,7 +28,13 @@ import {
   Check,
   ExternalLink,
   TrendingDown,
-  Zap
+  Zap,
+  Camera,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+  ImagePlus,
+  ArrowUpDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -41,6 +47,79 @@ import {
   type PricingTier, 
   type ProductPricingConfig 
 } from '@/lib/pricing';
+
+// Fast client-side image compression helper (optimizes heavy smartphone camera photos before upload)
+async function compressImageIfNeeded(file: File): Promise<Blob | File> {
+  if (!file.type.startsWith('image/') || file.type.includes('svg') || file.type.includes('gif')) {
+    return file;
+  }
+  // If file is under 1.5MB, no compression needed
+  if (file.size < 1.5 * 1024 * 1024) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    try {
+      const img = document.createElement('img');
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.src = e.target?.result as string;
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 1920;
+            const MAX_HEIGHT = 1920;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height = Math.round((height * MAX_WIDTH) / width);
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width = Math.round((width * MAX_HEIGHT) / height);
+                height = MAX_HEIGHT;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve(file);
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.webp', {
+                    type: 'image/webp',
+                  });
+                  resolve(compressedFile);
+                } else {
+                  resolve(file);
+                }
+              },
+              'image/webp',
+              0.85
+            );
+          } catch {
+            resolve(file);
+          }
+        };
+        img.onerror = () => resolve(file);
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    } catch {
+      resolve(file);
+    }
+  });
+}
 
 const CATEGORIES = [
   'Camisetas',
@@ -106,8 +185,10 @@ export default function AdminProductsPage() {
 
   // Upload state
   const [uploading, setUploading] = useState(false);
+  const [replacingImageIndex, setReplacingImageIndex] = useState<number | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pricing tiers state
@@ -170,7 +251,7 @@ export default function AdminProductsPage() {
     setModalOpen(true);
   };
 
-  const openEditModal = (prod: any) => {
+  const openEditModal = (prod: any, initialTab: 'basic' | 'specs' | 'variants' | 'images' | 'pricing' = 'basic') => {
     setEditingId(prod.id);
     setName(prod.name || '');
     setCategory(prod.category || 'Camisetas');
@@ -224,7 +305,7 @@ export default function AdminProductsPage() {
     setShowUrlInput(false);
     setActive(prod.active !== undefined ? prod.active : true);
     setFeatured(prod.featured !== undefined ? prod.featured : false);
-    setFormTab('basic');
+    setFormTab(initialTab);
     setModalOpen(true);
   };
 
@@ -268,6 +349,14 @@ export default function AdminProductsPage() {
     setCustomizationPositions((prev) => prev.filter((p) => p !== posToRemove));
   };
 
+  const triggerUpload = (replaceIndex: number | null = null) => {
+    setReplacingImageIndex(replaceIndex);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -277,9 +366,10 @@ export default function AdminProductsPage() {
 
     try {
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+        const rawFile = files[i];
+        const processedFile = await compressImageIfNeeded(rawFile);
         const fd = new FormData();
-        fd.append('file', file);
+        fd.append('file', processedFile);
         fd.append('folder', 'products');
 
         const res = await fetch('/api/upload', { method: 'POST', body: fd });
@@ -287,20 +377,56 @@ export default function AdminProductsPage() {
         if (res.ok && data.url) {
           uploadedUrls.push(data.url);
         } else {
-          toast.error(data.error || `Erro ao enviar ${file.name}`);
+          toast.error(data.error || `Erro ao enviar ${rawFile.name}`);
         }
       }
 
       if (uploadedUrls.length > 0) {
-        setImages((prev) => [...prev, ...uploadedUrls]);
-        toast.success(`${uploadedUrls.length} foto(s) enviada(s) com sucesso!`);
+        if (replacingImageIndex !== null && replacingImageIndex >= 0) {
+          setImages((prev) => {
+            const next = [...prev];
+            next[replacingImageIndex] = uploadedUrls[0];
+            if (uploadedUrls.length > 1) {
+              next.push(...uploadedUrls.slice(1));
+            }
+            return next;
+          });
+          toast.success('Foto substituída com sucesso!');
+        } else {
+          setImages((prev) => [...prev, ...uploadedUrls]);
+          toast.success(`${uploadedUrls.length} foto(s) adicionada(s) com sucesso!`);
+        }
       }
     } catch {
       toast.error('Erro de conexão ao enviar imagem.');
     } finally {
       setUploading(false);
+      setReplacingImageIndex(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const handleSetCover = (index: number) => {
+    if (index === 0) return;
+    setImages((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(index, 1);
+      next.unshift(item);
+      return next;
+    });
+    toast.success('Foto definida como capa principal!');
+  };
+
+  const handleMoveImage = (fromIdx: number, direction: 'left' | 'right') => {
+    const toIdx = direction === 'left' ? fromIdx - 1 : fromIdx + 1;
+    setImages((prev) => {
+      if (toIdx < 0 || toIdx >= prev.length) return prev;
+      const next = [...prev];
+      const temp = next[fromIdx];
+      next[fromIdx] = next[toIdx];
+      next[toIdx] = temp;
+      return next;
+    });
   };
 
   const handleAddUrl = () => {
@@ -588,10 +714,19 @@ export default function AdminProductsPage() {
                 {/* Actions */}
                 <div className="p-5 pt-0 border-t border-slate-800/60 mt-2 flex items-center gap-2">
                   <button
-                    onClick={() => openEditModal(prod)}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 bg-slate-950 hover:bg-blue-500/10 hover:border-blue-500/40 text-slate-200 hover:text-blue-400 font-bold py-2.5 px-3 rounded-xl border border-slate-800 transition-all text-xs"
+                    onClick={() => openEditModal(prod, 'images')}
+                    className="inline-flex items-center justify-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 font-bold py-2.5 px-3 rounded-xl border border-blue-500/30 transition-all text-xs shrink-0"
+                    title="Trocar ou gerenciar fotos deste produto"
                   >
-                    <Edit2 className="w-3.5 h-3.5" />
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Fotos</span>
+                  </button>
+
+                  <button
+                    onClick={() => openEditModal(prod, 'basic')}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 bg-slate-950 hover:bg-blue-500/10 hover:border-blue-500/40 text-slate-200 hover:text-blue-400 font-bold py-2.5 px-3 rounded-xl border border-slate-800 transition-all text-xs truncate"
+                  >
+                    <Edit2 className="w-3.5 h-3.5 shrink-0" />
                     <span>Editar Tudo</span>
                   </button>
 
@@ -599,7 +734,7 @@ export default function AdminProductsPage() {
                     href={`/produtos/${prod.slug}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-2.5 text-slate-400 hover:text-white bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl transition-colors"
+                    className="p-2.5 text-slate-400 hover:text-white bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl transition-colors shrink-0"
                     title="Ver no site"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -607,7 +742,7 @@ export default function AdminProductsPage() {
 
                   <button
                     onClick={() => handleDelete(prod.id, prod.name)}
-                    className="p-2.5 text-slate-400 hover:text-red-400 bg-slate-950 hover:bg-red-500/10 border border-slate-800 hover:border-red-500/30 rounded-xl transition-colors"
+                    className="p-2.5 text-slate-400 hover:text-red-400 bg-slate-950 hover:bg-red-500/10 border border-slate-800 hover:border-red-500/30 rounded-xl transition-colors shrink-0"
                     title="Excluir produto"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -1654,28 +1789,37 @@ export default function AdminProductsPage() {
 
               {/* ── ABA 4: FOTOS DO PRODUTO ── */}
               {formTab === 'images' && (
-                <div className="space-y-4 animate-in fade-in duration-150">
-                  <div className="space-y-2">
-                    <label className="text-slate-300 font-bold block">
-                      Galeria de Fotos: <span className="text-red-400">*</span>
-                    </label>
+                <div className="space-y-5 animate-in fade-in duration-150">
+                  {/* Hidden File Input for Mobile & Desktop */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,.jpg,.jpeg,.png,.webp,.svg,.heic,.heif,.jfif"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
 
-                    {/* Upload Buttons */}
+                  {/* Header info */}
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex items-start gap-3">
+                    <Camera className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-blue-300 font-bold text-xs">Galeria de Fotos do Produto</p>
+                      <p className="text-blue-400/80 text-[11px] mt-0.5">
+                        Adicione quantas fotos desejar. No celular, você pode tirar foto direto da câmera ou escolher da galeria. A foto marcada como <b>CAPA</b> é a principal exibida no catálogo.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Upload Action Bar */}
+                  <div className="space-y-3">
                     <div className="flex flex-col sm:flex-row gap-3">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept=".jpg,.jpeg,.png,.webp,.svg"
-                        className="hidden"
-                        id="admin-product-file-upload"
-                        onChange={handleFileUpload}
-                      />
-
-                      <label
-                        htmlFor="admin-product-file-upload"
-                        className={`flex-1 inline-flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-400 text-slate-950 font-bold py-3 px-4 rounded-xl cursor-pointer transition-all shadow-md ${
-                          uploading ? 'opacity-50 cursor-not-allowed' : ''
+                      <button
+                        type="button"
+                        onClick={() => triggerUpload(null)}
+                        disabled={uploading}
+                        className={`flex-1 inline-flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-400 text-slate-950 font-extrabold py-3.5 px-5 rounded-xl cursor-pointer transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-xs ${
+                          uploading ? 'opacity-60 cursor-not-allowed' : ''
                         }`}
                       >
                         {uploading ? (
@@ -1685,55 +1829,130 @@ export default function AdminProductsPage() {
                           </>
                         ) : (
                           <>
-                            <Upload className="w-4 h-4" />
-                            <span>ENVIAR FOTOS DO COMPUTADOR</span>
+                            <Camera className="w-4 h-4" />
+                            <span>+ ADICIONAR FOTOS (CÂMERA / GALERIA)</span>
                           </>
                         )}
-                      </label>
+                      </button>
 
                       <button
                         type="button"
                         onClick={() => setShowUrlInput(!showUrlInput)}
-                        className="px-4 py-3 bg-slate-950 hover:bg-slate-800 text-slate-300 font-bold rounded-xl border border-slate-800 transition-colors inline-flex items-center justify-center gap-1.5"
+                        className="px-4 py-3 bg-slate-950 hover:bg-slate-800 text-slate-300 font-bold rounded-xl border border-slate-800 transition-colors inline-flex items-center justify-center gap-1.5 active:scale-95"
                       >
                         <LinkIcon className="w-4 h-4" />
                         <span>Adicionar por URL</span>
                       </button>
                     </div>
 
+                    {/* URL Input */}
                     {showUrlInput && (
-                      <div className="flex items-center gap-2 p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                      <div className="flex items-center gap-2 p-3 bg-slate-950 border border-slate-800 rounded-xl animate-in fade-in">
                         <input
                           type="text"
-                          placeholder="Cole a URL da foto (https://...)"
+                          placeholder="Cole a URL direta da foto (https://...)"
                           value={urlInput}
                           onChange={(e) => setUrlInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddUrl();
+                            }
+                          }}
                           className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-400 focus:outline-none"
                         />
                         <button
                           type="button"
                           onClick={handleAddUrl}
-                          className="px-4 py-2 bg-blue-500 hover:bg-blue-400 text-slate-950 font-bold rounded-xl text-xs"
+                          className="px-4 py-2 bg-blue-500 hover:bg-blue-400 text-slate-950 font-bold rounded-xl text-xs shrink-0"
                         >
                           Inserir
                         </button>
                       </div>
                     )}
 
-                    {/* Image Previews Grid */}
-                    <div className="pt-2">
-                      {images.length === 0 ? (
-                        <div className="h-40 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center text-slate-600 space-y-2">
-                          <ImageIcon className="w-8 h-8" />
-                          <p className="text-xs">Nenhuma foto adicionada ainda.</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {images.map((imgUrl, idx) => (
-                            <div
-                              key={idx}
-                              className="relative aspect-square rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 group"
-                            >
+                    {/* Drag & Drop Area */}
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={async (e) => {
+                        e.preventDefault();
+                        setIsDragging(false);
+                        const files = e.dataTransfer.files;
+                        if (!files || files.length === 0) return;
+                        setUploading(true);
+                        const uploadedUrls: string[] = [];
+                        try {
+                          for (let i = 0; i < files.length; i++) {
+                            const rawFile = files[i];
+                            const processedFile = await compressImageIfNeeded(rawFile);
+                            const fd = new FormData();
+                            fd.append('file', processedFile);
+                            fd.append('folder', 'products');
+                            const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                            const data = await res.json();
+                            if (res.ok && data.url) uploadedUrls.push(data.url);
+                          }
+                          if (uploadedUrls.length > 0) {
+                            setImages((prev) => [...prev, ...uploadedUrls]);
+                            toast.success(`${uploadedUrls.length} foto(s) enviada(s)!`);
+                          }
+                        } catch {
+                          toast.error('Erro ao enviar imagem.');
+                        } finally {
+                          setUploading(false);
+                        }
+                      }}
+                      onClick={() => triggerUpload(null)}
+                      className={`border-2 border-dashed rounded-2xl p-4 sm:p-6 text-center cursor-pointer transition-all ${
+                        isDragging
+                          ? 'border-blue-500 bg-blue-500/10 scale-[1.01]'
+                          : 'border-slate-800 hover:border-slate-700 bg-slate-950/60 hover:bg-slate-950'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center justify-center gap-1.5 text-slate-400">
+                        <ImagePlus className="w-7 h-7 text-blue-400" />
+                        <p className="text-xs font-bold text-white">
+                          Clique aqui ou arraste fotos para enviar
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Formatos suportados: JPG, PNG, WEBP, HEIC, SVG (otimização automática no celular)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Image Previews Grid */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-slate-300 font-bold block text-xs">
+                        Fotos Cadastradas ({images.length}):
+                      </label>
+                      {images.length > 1 && (
+                        <span className="text-[11px] text-slate-500">
+                          Use as setas para reorganizar ou a estrela para definir como Capa
+                        </span>
+                      )}
+                    </div>
+
+                    {images.length === 0 ? (
+                      <div className="h-32 border border-slate-800 rounded-2xl flex flex-col items-center justify-center text-slate-500 space-y-1 bg-slate-950">
+                        <ImageIcon className="w-8 h-8 text-slate-700" />
+                        <p className="text-xs">Nenhuma foto adicionada ainda.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {images.map((imgUrl, idx) => (
+                          <div
+                            key={idx}
+                            className={`relative rounded-2xl overflow-hidden bg-slate-950 border transition-all flex flex-col ${
+                              idx === 0
+                                ? 'border-blue-500/70 shadow-lg shadow-blue-500/10 ring-1 ring-blue-500/30'
+                                : 'border-slate-800 hover:border-slate-700'
+                            }`}
+                          >
+                            {/* Image Container */}
+                            <div className="relative aspect-square w-full bg-slate-950 overflow-hidden">
                               <Image
                                 src={imgUrl}
                                 alt={`Foto ${idx + 1}`}
@@ -1741,24 +1960,86 @@ export default function AdminProductsPage() {
                                 unoptimized
                                 className="object-cover"
                               />
-                              {idx === 0 && (
-                                <span className="absolute top-2 left-2 bg-blue-500 text-slate-950 font-extrabold text-[9px] px-2 py-0.5 rounded-full shadow">
-                                  CAPA
+
+                              {/* Cover Badge */}
+                              {idx === 0 ? (
+                                <span className="absolute top-2.5 left-2.5 bg-blue-500 text-slate-950 font-black text-[10px] px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1">
+                                  <Star className="w-3 h-3 fill-current" />
+                                  <span>CAPA PRINCIPAL</span>
+                                </span>
+                              ) : (
+                                <span className="absolute top-2.5 left-2.5 bg-slate-950/80 backdrop-blur text-slate-300 font-bold text-[10px] px-2 py-0.5 rounded-lg border border-slate-800">
+                                  Foto #{idx + 1}
                                 </span>
                               )}
+
+                              {/* Quick Delete in top right */}
                               <button
                                 type="button"
                                 onClick={() => handleRemoveImage(idx)}
-                                className="absolute top-2 right-2 p-1.5 bg-red-500/90 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                                className="absolute top-2.5 right-2.5 p-1.5 bg-slate-950/80 hover:bg-red-500 text-slate-300 hover:text-white rounded-lg border border-slate-800 hover:border-red-400 transition-colors shadow"
                                 title="Remover foto"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+
+                            {/* Action Bar for this specific image */}
+                            <div className="p-2.5 bg-slate-900 border-t border-slate-800/80 flex items-center justify-between gap-1.5">
+                              {idx !== 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetCover(idx)}
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1.5 rounded-lg border border-amber-500/30 transition-all"
+                                  title="Definir esta foto como a capa principal"
+                                >
+                                  <Star className="w-3 h-3" />
+                                  <span>Tornar Capa</span>
+                                </button>
+                              ) : (
+                                <span className="text-[11px] text-blue-400 font-bold px-1 flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Foto Ativa
+                                </span>
+                              )}
+
+                              <div className="flex items-center gap-1 ml-auto">
+                                <button
+                                  type="button"
+                                  onClick={() => triggerUpload(idx)}
+                                  className="p-1.5 bg-slate-950 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 rounded-lg border border-slate-800 hover:border-blue-500/40 transition-colors"
+                                  title="Substituir esta foto por outra"
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                </button>
+
+                                {idx > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveImage(idx, 'left')}
+                                    className="p-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg border border-slate-800 transition-colors"
+                                    title="Mover foto para a esquerda"
+                                  >
+                                    <ChevronLeft className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+
+                                {idx < images.length - 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveImage(idx, 'right')}
+                                    className="p-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg border border-slate-800 transition-colors"
+                                    title="Mover foto para a direita"
+                                  >
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
