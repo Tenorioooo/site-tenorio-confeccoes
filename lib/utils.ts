@@ -29,7 +29,7 @@ export interface QuoteCartItem {
   sizes: { [size: string]: number };
   customizationPositions: string[];
   hasCustomArt: boolean;
-  customArtFiles?: { name: string; url: string; size: number }[];
+  customArtFiles?: { name: string; url: string; size: number; mimeType?: string }[];
   notes?: string;
 }
 
@@ -43,9 +43,11 @@ export function formatWhatsAppMessage(params: {
   notes?: string;
   quoteCode: string;
   items: QuoteCartItem[];
+  files?: Array<{ url: string; name?: string }>;
   estimatedTotal?: number;
+  baseUrl?: string;
 }): string {
-  const { customerName, whatsapp, email, city, state, desiredDate, notes, quoteCode, items, estimatedTotal } = params;
+  const { customerName, whatsapp, email, city, state, desiredDate, notes, quoteCode, items, files, estimatedTotal, baseUrl } = params;
 
   let text = `*SOLICITAÇÃO DE ORÇAMENTO — TENÓRIO CONFECÇÕES*\n`;
   text += `*Código do Orçamento:* ${quoteCode}\n`;
@@ -60,6 +62,7 @@ export function formatWhatsAppMessage(params: {
   text += `*ITENS DO PEDIDO (${items.length}):*\n\n`;
 
   let totalEstimatedSum = 0;
+  const customArtItemsList: string[] = [];
 
   items.forEach((item, idx) => {
     const itemTotal = item.totalPrice || (item.unitPrice ? item.unitPrice * item.quantity : 0);
@@ -108,7 +111,12 @@ export function formatWhatsAppMessage(params: {
     if (item.printCode) {
       text += `   • Estampa: ${item.printCode} (${item.printName || 'Catálogo'})\n`;
     } else if (item.hasCustomArt) {
-      text += `   • Estampa: Arte própria do cliente anexada\n`;
+      text += `   • Estampa: 🎨 Arte própria do cliente anexada\n`;
+      if (item.customArtFiles && item.customArtFiles.length > 0) {
+        item.customArtFiles.forEach((f) => {
+          if (f.name) customArtItemsList.push(f.name);
+        });
+      }
     }
 
     if (item.customizationPositions && item.customizationPositions.length > 0) {
@@ -127,6 +135,26 @@ export function formatWhatsAppMessage(params: {
     text += `💰 *VALOR ESTIMADO TOTAL: R$ ${finalTotal.toFixed(2).replace('.', ',')}*\n`;
     text += `_(Sujeito à confirmação conforme acabamentos e personalização)_\n`;
     text += `----------------------------------------\n\n`;
+  }
+
+  // Links das Artes / Arquivos
+  if (files && files.length > 0) {
+    text += `🖼️ *ARTE(S) ENVIADA(S) PELO CLIENTE (${files.length}):*\n`;
+    files.forEach((f, i) => {
+      const fileName = f.name || `Arte_${i + 1}`;
+      if (f.url && !f.url.startsWith('data:')) {
+        const fullUrl = baseUrl ? (f.url.startsWith('http') ? f.url : `${baseUrl}${f.url}`) : f.url;
+        text += `   • ${fileName}: ${fullUrl}\n`;
+      } else {
+        text += `   • ${fileName} (Anexada no sistema)\n`;
+      }
+    });
+    text += `\n`;
+  }
+
+  // Link online de acompanhamento do pedido
+  if (baseUrl) {
+    text += `🔍 *Ver detalhes do orçamento online:*\n${baseUrl}/acompanhar-orcamento?code=${quoteCode}\n\n`;
   }
 
   if (notes) {

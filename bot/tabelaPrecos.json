@@ -1,0 +1,247 @@
+{
+  "produtos": [
+    {
+      "termos": [
+        "algodao",
+        "algodão",
+        "camiseta personalizada 100% algodão",
+        "camiseta algodão"
+      ],
+      "nome": "Camiseta 100% Algodão Personalizada",
+      "precoBase": 49.90,
+      "prazoConfeccao": "15 a 20 dias úteis"
+    },
+    {
+      "termos": [
+        "dry-fit",
+        "dry fit",
+        "dryfit"
+      ],
+      "nome": "Camiseta Dry-Fit Personalizada",
+      "precoBase": 64.90,
+      "prazoConfeccao": "30 a 40 dias úteis"
+    },
+    {
+      "termos": [
+        "polo",
+        "camisa polo",
+        "piquet"
+      ],
+      "nome": "Camisa Polo Personalizada",
+      "precoBase": 74.90,
+      "prazoConfeccao": "15 a 20 dias úteis"
+    },
+    {
+      "termos": [
+        "moletom",
+        "moletons",
+        "canguru",
+        "casaco"
+      ],
+      "nome": "Moletom Canguru Personalizado",
+      "precoBase": 119.90,
+      "prazoConfeccao": "15 a 20 dias úteis"
+    },
+    {
+      "termos": [
+        "canena",
+        "caneca",
+        "caneca de alumínio",
+        "caneca de aluminio",
+        "caneca personalizada"
+      ],
+      "nome": "Caneca de Alumínio Personalizada",
+      "precoBase": 28.46,
+      "quantidadeMinima": 20,
+      "quantidadeMinimaPorVariacao": 20,
+      "permiteDescontoProgressivo": false,
+      "prazoConfeccao": "20 a 25 dias úteis",
+      "variacoes": [
+        {
+          "nome": "300ml",
+          "termos": [
+            "300ml",
+            "300 ml",
+            "300"
+          ],
+          "preco": 28.46
+        },
+        {
+          "nome": "450ml",
+          "termos": [
+            "450ml",
+            "450 ml",
+            "450"
+          ],
+          "preco": 38.38
+        },
+        {
+          "nome": "500ml",
+          "termos": [
+            "500ml",
+            "500 ml",
+            "500"
+          ],
+          "preco": 31.66
+        },
+        {
+          "nome": "600ml",
+          "termos": [
+            "600ml",
+            "600 ml",
+            "600"
+          ],
+          "preco": 33.24
+        },
+        {
+          "nome": "700ml",
+          "termos": [
+            "700ml",
+            "700 ml",
+            "700"
+          ],
+          "preco": 36.86
+        },
+        {
+          "nome": "750ml",
+          "termos": [
+            "750ml",
+            "750 ml",
+            "750"
+          ],
+          "preco": 41.40
+        },
+        {
+          "nome": "790ml",
+          "termos": [
+            "790ml",
+            "790 ml",
+            "790"
+          ],
+          "preco": 48.44
+        },
+        {
+          "nome": "800ml",
+          "termos": [
+            "800ml",
+            "800 ml",
+            "800"
+          ],
+          "preco": 34.56
+        },
+        {
+          "nome": "850ml",
+          "termos": [
+            "850ml",
+            "850 ml",
+            "850"
+          ],
+          "preco": 35.90
+        },
+        {
+          "nome": "Nome Individual",
+          "termos": [
+            "nome individual",
+            "nome individual"
+          ],
+          "preco": 4.00
+        }
+      ]
+    },
+    {
+      "termos": [
+        "banner",
+        "wind banner",
+        "windbanner",
+        "flag banner"
+      ],
+      "nome": "Wind Banner Personalizado",
+      "precoBase": 129.80,
+      "permiteDescontoProgressivo": false,
+      "prazoConfeccao": "30 a 40 dias úteis",
+      "variacoes": [
+        {
+          "nome": "Wind Banner",
+          "termos": [
+            "tamanho único",
+            "tamanho unico",
+            "wind banner"
+          ],
+          "preco": 129.80
+        },
+        {
+          "nome": "Kit Suporte + Wind Banner",
+          "termos": [
+            "kit suporte",
+            "suporte"
+          ],
+          "preco": 289.80
+        }
+      ]
+    },
+    {
+      "termos": [
+        "bandeira",
+        "bandeirao",
+        "bandeirão",
+        "bandeira personalizada"
+      ],
+      "nome": "Bandeira Personalizada",
+      "precoBase": 99.80,
+      "prazoConfeccao": "30 a 40 dias úteis"
+    },
+    {
+      "termos": [
+        "abada",
+        "abadá",
+        "abada personalizado",
+        "abadá personalizado"
+      ],
+      "nome": "Abadá Personalizado",
+      "precoBase": 49.80,
+      "quantidadeMinima": 10,
+      "permiteDescontoProgressivo": false,
+      "prazoConfeccao": "30 a 40 dias úteis"
+    }
+  ],
+  "precoPadrao": 39.90,
+  "prazoPadrao": "7 a 12 dias úteis",
+  "custoAdicionalPorLocalExtra": 5.00,
+  "descontoProgressivo": [
+    {
+      "min": 1,
+      "max": 10,
+      "percentual": 0,
+      "descricao": "Sem desconto"
+    },
+    {
+      "min": 11,
+      "max": 99999,
+      "percentual": 8,
+      "descricao": "8% de desconto"
+    },
+    {
+      "min": 999999,
+      "max": 999999,
+      "percentual": 12,
+      "descricao": "12% de desconto"
+    },
+    {
+      "min": 999999,
+      "max": 999999,
+      "percentual": 18,
+      "descricao": "18% de desconto"
+    },
+    {
+      "min": 999999,
+      "max": 999999,
+      "percentual": 25,
+      "descricao": "25% de desconto"
+    }
+  ],
+  "informacoesPagamento": {
+    "forma": "PIX",
+    "condicao": "50% de entrada para início da confecção + 50% na conclusão/despacho do pedido.",
+    "detalhesProducao": "contados a partir da aprovação do layout virtual."
+  }
+}

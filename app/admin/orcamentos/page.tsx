@@ -24,7 +24,10 @@ import {
   Sparkles,
   Save,
   Check,
-  Package
+  Package,
+  Image as ImageIcon,
+  ZoomIn,
+  Maximize2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/pricing';
@@ -60,6 +63,64 @@ export default function AdminQuotesPage() {
   const [editModalOpen, setEditModalOpen] = useState(false); // Edit/Create modal
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [deleteConfirmQuote, setDeleteConfirmQuote] = useState<any>(null); // Delete modal
+  const [previewImage, setPreviewImage] = useState<{ url: string; title: string; size?: number; mime?: string } | null>(null); // Lightbox modal
+
+  // Helpers de arquivos e downloads
+  const isImageFile = (url: string, name?: string, mime?: string) => {
+    if (mime?.startsWith('image/')) return true;
+    if (url?.startsWith('data:image/')) return true;
+    const lower = (name || url || '').toLowerCase();
+    return ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif', '.avif', '.heic', '.jfif'].some((ext) => lower.includes(ext));
+  };
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes || bytes <= 0) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      toast.info(`Baixando ${filename || 'arquivo'}...`);
+      if (url.startsWith('data:')) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'arte_cliente.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        toast.success('Download concluído!');
+        return;
+      }
+
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename || 'arte_cliente';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(blobUrl);
+      document.body.removeChild(a);
+      toast.success('Download concluído!');
+    } catch (err) {
+      // Fallback
+      window.open(url, '_blank');
+    }
+  };
+
+  const downloadAllFiles = async (files: any[]) => {
+    toast.info(`Iniciando download de ${files.length} arquivo(s)...`);
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      await downloadFile(f.fileUrl, f.originalName || `arte_${i + 1}`);
+      if (i < files.length - 1) {
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    }
+  };
 
   // Edit form state
   const [formCustomerName, setFormCustomerName] = useState('');
@@ -373,6 +434,7 @@ export default function AdminQuotesPage() {
   // WhatsApp Proposal Message Generator
   const generateWhatsAppProposalLink = (q: any) => {
     const total = getQuoteTotal(q);
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
     let msg = `Olá, *${q.customerName}*! Tudo bem?\n\n`;
     msg += `Aqui é da equipe da *Tenório Confecções*. Segue a proposta atualizada para sua solicitação *#${q.quoteCode}*:\n\n`;
 
@@ -383,8 +445,24 @@ export default function AdminQuotesPage() {
       if (it.unitPrice && it.unitPrice > 0) {
         msg += `   • Valor: R$ ${Number(it.unitPrice).toFixed(2).replace('.', ',')}/un = R$ ${Number(itTotal).toFixed(2).replace('.', ',')}\n`;
       }
-      if (it.printCode) msg += `   • Estampa: ${it.printCode}\n`;
+      if (it.printCode) {
+        msg += `   • Estampa: ${it.printCode}\n`;
+      } else if (it.hasCustomArt) {
+        msg += `   • Estampa: Arte personalizada do cliente\n`;
+      }
     });
+
+    if (q.files && q.files.length > 0) {
+      msg += `\n🖼️ *Arte(s) Registrada(s) (${q.files.length}):*\n`;
+      q.files.forEach((f: any, i: number) => {
+        const fullUrl = f.fileUrl?.startsWith('http') ? f.fileUrl : `${origin}${f.fileUrl}`;
+        if (!f.fileUrl?.startsWith('data:')) {
+          msg += `   • ${f.originalName || `Arte ${i + 1}`}: ${fullUrl}\n`;
+        } else {
+          msg += `   • ${f.originalName || `Arte ${i + 1}`} (Anexada no sistema)\n`;
+        }
+      });
+    }
 
     if (total > 0) {
       msg += `\n💰 *VALOR TOTAL ESTIMADO: R$ ${total.toFixed(2).replace('.', ',')}*\n`;
@@ -392,6 +470,11 @@ export default function AdminQuotesPage() {
     if (q.desiredDate) {
       msg += `📅 *Prazo Previsto:* ${q.desiredDate}\n`;
     }
+
+    if (origin) {
+      msg += `\n🔗 *Acompanhe online:* ${origin}/acompanhar-orcamento?code=${q.quoteCode}\n`;
+    }
+
     msg += `\nPodemos dar andamento na confecção do seu pedido? Qualquer dúvida estamos à disposição!`;
 
     const phone = q.whatsapp.replace(/\D/g, '');
@@ -640,7 +723,15 @@ export default function AdminQuotesPage() {
                         )}
                       </td>
                       <td className="p-4">
-                        <span className="font-bold text-slate-200">{q.items?.length || 0} produto(s)</span>
+                        <div className="space-y-1">
+                          <span className="font-bold text-slate-200 block">{q.items?.length || 0} produto(s)</span>
+                          {q.files && q.files.length > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                              <ImageIcon className="w-3 h-3" />
+                              <span>{q.files.length} {q.files.length === 1 ? 'arte anexada' : 'artes anexadas'}</span>
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <span className="font-extrabold text-emerald-400 text-sm">
@@ -823,26 +914,138 @@ export default function AdminQuotesPage() {
               </div>
             </div>
 
-            {/* Uploaded Files */}
+            {/* Uploaded Files Gallery */}
             {selectedQuote.files && selectedQuote.files.length > 0 && (
-              <div className="space-y-2 border-t border-slate-800 pt-4">
-                <h4 className="font-bold text-white text-sm">Arquivos de Arte Enviados pelo Cliente:</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {selectedQuote.files.map((file: any) => (
-                    <a
-                      key={file.id}
-                      href={file.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs text-blue-400 hover:border-blue-400 transition-colors"
+              <div className="space-y-4 border-t border-slate-800 pt-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20 text-emerald-400">
+                      <ImageIcon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-sm">
+                        Artes Enviadas pelo Cliente ({selectedQuote.files.length}):
+                      </h4>
+                      <p className="text-[11px] text-slate-400">
+                        Clique na imagem para ampliar ou use o botão para baixar em alta qualidade.
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedQuote.files.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => downloadAllFiles(selectedQuote.files)}
+                      className="inline-flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold px-3 py-1.5 rounded-xl text-xs transition-all self-start sm:self-auto"
                     >
-                      <div className="flex items-center gap-2 truncate">
-                        <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span className="truncate text-white font-medium">{file.originalName}</span>
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Baixar Todas ({selectedQuote.files.length})</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {selectedQuote.files.map((file: any, fIdx: number) => {
+                    const isImg = isImageFile(file.fileUrl, file.originalName, file.mimeType);
+                    const sizeStr = formatFileSize(file.size);
+
+                    return (
+                      <div
+                        key={file.id || fIdx}
+                        className="bg-slate-950 border border-slate-800 hover:border-blue-500/50 rounded-2xl overflow-hidden shadow-lg transition-all group flex flex-col justify-between"
+                      >
+                        {/* Image Preview / Icon Container */}
+                        <div
+                          onClick={() => {
+                            if (isImg) {
+                              setPreviewImage({
+                                url: file.fileUrl,
+                                title: file.originalName || 'Arte do Cliente',
+                                size: file.size,
+                                mime: file.mimeType,
+                              });
+                            }
+                          }}
+                          className={`relative w-full aspect-video bg-slate-900 flex items-center justify-center overflow-hidden ${
+                            isImg ? 'cursor-pointer' : ''
+                          }`}
+                        >
+                          {isImg ? (
+                            <>
+                              <img
+                                src={file.fileUrl}
+                                alt={file.originalName || 'Arte'}
+                                className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[2px]">
+                                <span className="bg-slate-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-700 flex items-center gap-1 shadow-lg">
+                                  <Maximize2 className="w-3 h-3 text-blue-400" />
+                                  <span>Ampliar</span>
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 p-4 text-center">
+                              <FileText className="w-10 h-10 text-emerald-400" />
+                              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                {file.originalName?.split('.').pop() || 'Arquivo'}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* File type badge */}
+                          <span className="absolute top-2 right-2 bg-slate-950/80 backdrop-blur-md border border-slate-700 text-[10px] font-extrabold text-blue-300 px-2 py-0.5 rounded-md uppercase">
+                            {file.originalName?.split('.').pop() || (isImg ? 'IMG' : 'DOC')}
+                          </span>
+                        </div>
+
+                        {/* File Details & Download Button */}
+                        <div className="p-3 space-y-2.5 border-t border-slate-800/80 bg-slate-950">
+                          <div className="min-w-0">
+                            <p
+                              className="font-bold text-white text-xs truncate"
+                              title={file.originalName}
+                            >
+                              {file.originalName || 'arte_cliente'}
+                            </p>
+                            {sizeStr && (
+                              <p className="text-[10px] text-slate-500 mt-0.5">{sizeStr}</p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-1 border-t border-slate-800/50">
+                            <button
+                              type="button"
+                              onClick={() => downloadFile(file.fileUrl, file.originalName || 'arte_cliente')}
+                              className="flex-1 inline-flex items-center justify-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/30 py-2 px-3 rounded-xl text-xs font-bold transition-all"
+                              title="Baixar imagem/arquivo para seu computador"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Baixar</span>
+                            </button>
+
+                            {isImg && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPreviewImage({
+                                    url: file.fileUrl,
+                                    title: file.originalName || 'Arte do Cliente',
+                                    size: file.size,
+                                    mime: file.mimeType,
+                                  })
+                                }
+                                className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 rounded-xl transition-colors"
+                                title="Visualizar em tamanho grande"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <Download className="w-4 h-4" />
-                    </a>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1228,6 +1431,79 @@ export default function AdminQuotesPage() {
                 Sim, Excluir
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 4: IMAGE LIGHTBOX / FULLSCREEN PREVIEW ── */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[60] bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-150"
+          onClick={() => setPreviewImage(null)}
+        >
+          {/* Lightbox Topbar */}
+          <div
+            className="w-full max-w-5xl flex items-center justify-between gap-4 bg-slate-900/80 border border-slate-800 rounded-2xl px-5 py-3 shadow-2xl backdrop-blur-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 truncate">
+              <div className="p-2 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-400 shrink-0">
+                <ImageIcon className="w-5 h-5" />
+              </div>
+              <div className="truncate">
+                <h4 className="font-bold text-white text-sm truncate">{previewImage.title}</h4>
+                <p className="text-[11px] text-slate-400">
+                  {formatFileSize(previewImage.size) ? `Tamanho: ${formatFileSize(previewImage.size)}` : 'Arte enviada pelo cliente'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => downloadFile(previewImage.url, previewImage.title)}
+                className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-400 text-slate-950 font-black px-4 py-2 rounded-xl text-xs shadow-lg transition-all"
+                title="Baixar esta imagem para o computador"
+              >
+                <Download className="w-4 h-4" />
+                <span>BAIXAR ARTE</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => window.open(previewImage.url, '_blank')}
+                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 transition-colors"
+                title="Abrir imagem em nova guia"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 transition-colors"
+                title="Fechar visualização"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Lightbox Main Image Display */}
+          <div
+            className="flex-1 w-full max-w-5xl flex items-center justify-center p-2 sm:p-6 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={previewImage.url}
+              alt={previewImage.title}
+              className="max-h-[75vh] max-w-full object-contain rounded-2xl border border-slate-800/80 shadow-2xl bg-slate-900/40"
+            />
+          </div>
+
+          {/* Lightbox Bottom helper hint */}
+          <div className="text-center text-xs text-slate-500 pb-2">
+            Pressione ESC ou clique fora da imagem para fechar.
           </div>
         </div>
       )}

@@ -89,6 +89,12 @@ function SuccessContent() {
         <p className="text-[11px] text-slate-500">
           Guarde este código para acompanhar o status da produção e atendimento.
         </p>
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-[11px] text-emerald-300 text-left flex items-start gap-2">
+          <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+          <span>
+            Os links das suas artes e a cotação detalhada já foram formatados automaticamente na sua mensagem do WhatsApp!
+          </span>
+        </div>
       </div>
 
       {/* Action Buttons */}

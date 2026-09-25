@@ -102,18 +102,52 @@ export async function POST(request: Request) {
       }
     }
 
-    if (Array.isArray(files) && files.length > 0) {
+    // Coletar arquivos do root e dos itens (customArtFiles)
+    const filesToSave: Array<{ url: string; name?: string; mimeType?: string; size?: number }> = [];
+    const seenUrls = new Set<string>();
+
+    if (Array.isArray(files)) {
       for (const f of files) {
-        await prisma.uploadedFile.create({
-          data: {
-            quoteId: createdQuote.id,
-            fileUrl: f.url || f.fileUrl,
-            originalName: f.name || f.originalName || 'arte_cliente',
-            mimeType: f.mimeType || 'application/octet-stream',
+        const url = f.url || f.fileUrl;
+        if (url && !seenUrls.has(url)) {
+          seenUrls.add(url);
+          filesToSave.push({
+            url,
+            name: f.name || f.originalName || 'arte_cliente',
+            mimeType: f.mimeType || 'image/jpeg',
             size: f.size || 0,
-          },
-        });
+          });
+        }
       }
+    }
+
+    for (const item of items) {
+      if (Array.isArray(item.customArtFiles)) {
+        for (const f of item.customArtFiles) {
+          const url = f.url || f.fileUrl;
+          if (url && !seenUrls.has(url)) {
+            seenUrls.add(url);
+            filesToSave.push({
+              url,
+              name: f.name || f.originalName || 'arte_cliente',
+              mimeType: f.mimeType || 'image/jpeg',
+              size: f.size || 0,
+            });
+          }
+        }
+      }
+    }
+
+    for (const f of filesToSave) {
+      await prisma.uploadedFile.create({
+        data: {
+          quoteId: createdQuote.id,
+          fileUrl: f.url,
+          originalName: f.name || 'arte_cliente',
+          mimeType: f.mimeType || 'image/jpeg',
+          size: f.size || 0,
+        },
+      });
     }
 
     const fullQuote = await prisma.quote.findUnique({

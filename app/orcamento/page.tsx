@@ -82,6 +82,23 @@ export default function QuotePage() {
     trackEvent('start_quote', { itemsCount: items.length });
 
     try {
+      // Coletar arquivos de arte customizada de todos os itens do carrinho
+      const allFiles: Array<{ url: string; name: string; size?: number; mimeType?: string }> = [];
+      items.forEach((item) => {
+        if (item.customArtFiles && Array.isArray(item.customArtFiles)) {
+          item.customArtFiles.forEach((f) => {
+            if (f && f.url) {
+              allFiles.push({
+                url: f.url,
+                name: f.name || 'arte_cliente',
+                size: f.size || 0,
+                mimeType: f.mimeType || 'image/jpeg',
+              });
+            }
+          });
+        }
+      });
+
       const res = await fetch('/api/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,6 +111,7 @@ export default function QuotePage() {
           desiredDate: desiredDate || undefined,
           notes: notes || undefined,
           items,
+          files: allFiles,
         }),
       });
 
@@ -102,6 +120,7 @@ export default function QuotePage() {
         const quoteCode = quoteData.quoteCode;
 
         // Build WhatsApp Message String
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
         const messageText = formatWhatsAppMessage({
           customerName,
           whatsapp,
@@ -112,7 +131,9 @@ export default function QuotePage() {
           notes,
           quoteCode,
           items,
+          files: allFiles,
           estimatedTotal: estimatedTotalPrice > 0 ? estimatedTotalPrice : undefined,
+          baseUrl,
         });
 
         // Store encoded message for success page
@@ -269,9 +290,25 @@ export default function QuotePage() {
                             </p>
                           )}
                           {item.hasCustomArt && (
-                            <p className="text-xs text-emerald-400 font-semibold">
-                              Arte própria do cliente anexada
-                            </p>
+                            <div className="space-y-1 py-1">
+                              <p className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>Arte própria do cliente anexada</span>
+                              </p>
+                              {item.customArtFiles && item.customArtFiles.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                  {item.customArtFiles.map((f, fIdx) => (
+                                    <div
+                                      key={fIdx}
+                                      className="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-300"
+                                    >
+                                      <FileText className="w-3 h-3 text-emerald-400" />
+                                      <span className="truncate max-w-[140px] font-medium">{f.name}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           )}
 
                           {sizesStr && (

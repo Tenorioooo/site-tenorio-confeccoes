@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -46,3 +46,10 @@ next-env.d.ts
 *.db-wal
 *.db-shm
 dev.db
+
+# bot cache & sessions
+.wwebjs_auth/
+.wwebjs_cache/
+bot/.wwebjs_auth/
+bot/.wwebjs_cache/
+
