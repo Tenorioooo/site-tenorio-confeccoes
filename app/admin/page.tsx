@@ -438,7 +438,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <p className="text-2xl sm:text-3xl font-black text-white relative z-10">
-            {totalPiecesCount.toLocaleString('pt-BR')} <span className="text-sm font-bold text-slate-400">un</span>
+            {(totalPiecesCount || 0).toLocaleString('pt-BR')} <span className="text-sm font-bold text-slate-400">un</span>
           </p>
           <div className="flex items-center justify-between text-[11px] text-slate-400 relative z-10 pt-1 border-t border-slate-800/80">
             <span>Peças solicitadas</span>

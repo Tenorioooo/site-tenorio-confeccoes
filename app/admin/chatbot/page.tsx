@@ -411,7 +411,7 @@ export default function ChatbotAdminTab() {
     setGradeInput((prod.gradeTamanhos || []).join(', '));
     setCoresInput((prod.coresDisponiveis || []).join(', '));
     setVariacoesInput(
-      (prod.variacoes || []).map((v) => `${v.termo}: ${v.preco.toFixed(2)}`).join('\n')
+      (prod.variacoes || []).map((v) => `${v.termo}: ${Number(v.preco ?? 0).toFixed(2)}`).join('\n')
     );
   };
 
@@ -767,12 +767,12 @@ export default function ChatbotAdminTab() {
                     <div>
                       <p className="text-sm font-semibold text-slate-200">{orc.cliente || 'Cliente'}</p>
                       <p className="text-xs text-slate-400 mt-0.5">
-                        {orc.pecas} peças • {new Date(orc.data).toLocaleTimeString('pt-BR')}
+                        {orc.pecas ?? 0} peças • {orc.data ? new Date(orc.data).toLocaleTimeString('pt-BR') : '--:--'}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-base font-bold text-emerald-400">
-                        {orc.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        {Number(orc.total ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </p>
                       <span className="text-[10px] font-mono text-slate-500 uppercase">{orc.codigo}</span>
                     </div>
@@ -892,7 +892,7 @@ export default function ChatbotAdminTab() {
                           <strong className="text-slate-300">Motivo:</strong> {cli.motivo}
                         </p>
                         <p className="text-[11px] text-slate-500 mt-1">
-                          ⏰ Solicitado em: {new Date(cli.data).toLocaleString('pt-BR')}
+                          ⏰ Solicitado em: {cli.data ? new Date(cli.data).toLocaleString('pt-BR') : 'Data não informada'}
                         </p>
                       </div>
                     </div>
@@ -1133,7 +1133,7 @@ export default function ChatbotAdminTab() {
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-400">Preço Base:</span>
                       <span className="font-bold text-emerald-400">
-                        {prod.precoBaseUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        {Number(prod.precoBaseUnitario ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </span>
                     </div>
 
@@ -1155,7 +1155,7 @@ export default function ChatbotAdminTab() {
                           {prod.variacoes.map((v, vi) => (
                             <div key={vi} className="flex justify-between text-[11px] text-slate-300">
                               <span>• {v.termo}</span>
-                              <span className="font-mono text-emerald-400">R$ {v.preco.toFixed(2)}</span>
+                              <span className="font-mono text-emerald-400">R$ {Number(v.preco ?? 0).toFixed(2)}</span>
                             </div>
                           ))}
                         </div>

@@ -778,7 +778,7 @@ export default function ChatbotAdminTab() {
                     </div>
                     <div className="text-right">
                       <p className="text-base font-bold text-emerald-400">
-                        {orc.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        {Number(orc.total ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </p>
                       <span className="text-[10px] font-mono text-slate-500 uppercase">{orc.codigo}</span>
                     </div>
@@ -898,7 +898,7 @@ export default function ChatbotAdminTab() {
                           <strong className="text-slate-300">Motivo:</strong> {cli.motivo}
                         </p>
                         <p className="text-[11px] text-slate-500 mt-1">
-                          ⏰ Solicitado em: {new Date(cli.data).toLocaleString('pt-BR')}
+                          ⏰ Solicitado em: {cli.data ? new Date(cli.data).toLocaleString('pt-BR') : 'Data não informada'}
                         </p>
                       </div>
                     </div>
@@ -1139,7 +1139,7 @@ export default function ChatbotAdminTab() {
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-400">Preço Base:</span>
                       <span className="font-bold text-emerald-400">
-                        {prod.precoBaseUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        {Number(prod.precoBaseUnitario ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </span>
                     </div>
 
