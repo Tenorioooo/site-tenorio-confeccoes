@@ -428,10 +428,14 @@ client.on("message_create", async (msg) => {
     }
 
     // =====================================
-    // 0.1 RESPOSTA AO QUESTIONÁRIO DE ORÇAMENTO (OPÇÃO 1)
+    // 0.1 RESPOSTA AO QUESTIONÁRIO DE ORÇAMENTO (GERAL OU ANÚNCIO)
     // =====================================
     const estadoUsuario = estadosConversa.get(msg.from);
-    if (estadoUsuario && estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO") {
+    if (
+      estadoUsuario &&
+      (estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO" || estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO_ANUNCIO")
+    ) {
+      const isAnuncio = estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO_ANUNCIO";
       const expirado = estadoUsuario.timestamp && Date.now() - estadoUsuario.timestamp > 15 * 60 * 1000;
       const ehOpcaoMenu = /^(menu|voltar|cancelar|inicio|início|1|2|3|4|5)$/i.test(texto) ||
                           texto.includes("atendente") || texto.includes("humano") || texto.includes("vendedor") ||
@@ -443,7 +447,7 @@ client.on("message_create", async (msg) => {
         // Não retorna aqui se for opção de menu, permitindo que caia diretamente no switch/if da opção desejada
       } else {
         estadosConversa.delete(msg.from);
-        console.log(`📝 [Questionário Respondido] Interpretando dados enviados por ${msg.from}...`);
+        console.log(`📝 [Questionário ${isAnuncio ? "de Anúncio " : ""}Respondido] Interpretando dados enviados por ${msg.from}...`);
 
         let nomeContato = "Cliente";
         try {
@@ -454,6 +458,12 @@ client.on("message_create", async (msg) => {
         } catch (e) {}
 
         const dadosOrcamento = interpretarRespostaQuestionario(msg.body, nomeContato);
+        if (isAnuncio) {
+          dadosOrcamento.observacoes = dadosOrcamento.observacoes 
+            ? `${dadosOrcamento.observacoes} | Origem: Anúncio Meta Ads (Esportivo)` 
+            : "Origem: Anúncio Meta Ads (Esportivo)";
+        }
+
         const calculo = calcularOrcamento(dadosOrcamento);
         const respostaOrcamento = gerarRespostaOrcamento(calculo);
 
@@ -471,12 +481,16 @@ client.on("message_create", async (msg) => {
         // Sincroniza e grava no banco de dados do Painel Admin (/api/quotes)
         salvarOrcamentoNoBanco(calculo, msg.from);
 
-        // Notifica admin sobre novo orçamento
+        // Notifica admin sobre novo orçamento com destaque se for de anúncio
         const valorMoeda = (calculo.totalLiquido || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+        const tituloNotif = isAnuncio
+          ? `🔥 LEAD DE ANÚNCIO ADS (${valorMoeda})`
+          : `💰 Novo Orçamento Gerado (${valorMoeda})`;
+
         dispararNotificacaoAdmin({
           tipo: "NOVO_ORCAMENTO",
-          titulo: `💰 Novo Orçamento Gerado (${valorMoeda})`,
-          mensagem: `*Cliente:* ${nomeContato}\n*Volume:* ${calculo.totalPecas} peças\n*Valor Total:* ${valorMoeda}`,
+          titulo: tituloNotif,
+          mensagem: `*Cliente:* ${nomeContato}\n*Volume:* ${calculo.totalPecas} peças\n*Valor Total:* ${valorMoeda}\n*Origem:* ${isAnuncio ? "Campanha Facebook/Instagram Ads" : "WhatsApp Direto"}`,
           dados: { clientePhone: msg.from, nome: nomeContato },
         });
 
@@ -486,7 +500,56 @@ client.on("message_create", async (msg) => {
     }
 
     // =====================================
-    // 1. RECONHECIMENTO DE MENSAGENS DO SITE
+    // 1. RECONHECIMENTO DE MENSAGENS DE ANÚNCIO (FACEBOOK / INSTAGRAM ADS)
+    // =====================================
+    const veioDeAnuncio =
+      texto.includes("vi o anuncio") ||
+      texto.includes("vi o anúncio") ||
+      texto.includes("vim pelo anuncio") ||
+      texto.includes("vim pelo anúncio") ||
+      texto.includes("anuncio do facebook") ||
+      texto.includes("anúncio do facebook") ||
+      texto.includes("anuncio do instagram") ||
+      texto.includes("anúncio do instagram") ||
+      texto.includes("anúncio") ||
+      texto.includes("anuncio") ||
+      texto.includes("interclasse") ||
+      texto.includes("dry-fit") ||
+      texto.includes("dry fit") ||
+      texto.includes("dryfit") ||
+      texto.includes("esportivo") ||
+      texto.includes("esportiva") ||
+      texto.includes("uniforme esportivo") ||
+      texto.includes("camisa de time") ||
+      texto.includes("torcida");
+
+    if (veioDeAnuncio) {
+      estadosConversa.set(msg.from, { etapa: "AGUARDANDO_DADOS_ORCAMENTO_ANUNCIO", timestamp: Date.now() });
+      const hora = new Date().getHours();
+      let saudacao = "Olá";
+      if (hora >= 5 && hora < 12) saudacao = "Bom dia";
+      else if (hora >= 12 && hora < 18) saudacao = "Boa tarde";
+      else saudacao = "Boa noite";
+
+      const msgAnuncio =
+        `👋 *${saudacao}! Seja muito bem-vindo(a) à Tenório Confecções!* 🏆⚽✨\n\n` +
+        `Que ótimo ver seu interesse nas nossas *Camisetas e Uniformes Esportivos Personalizados* (Dry-Fit / Interclasse / Equipes / Torcidas)!\n\n` +
+        `Trabalhamos com *Dry-Fit tecnológico de alta absorção, cores vibrantes que não desbotam e costura reforçada* para máxima durabilidade.\n\n` +
+        `📋 *Para gerarmos sua proposta personalizada com preço promocional por quantidade, responda:* \n\n` +
+        `1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta, Regata Esportiva, Abadá ou Kit com Calção)\n` +
+        `2️⃣ *Qual a quantidade aproximada de peças?* (Ex: 10, 20, 50, 100+ unidades)\n` +
+        `3️⃣ *Qual a finalidade?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n` +
+        `4️⃣ *Já possui a arte/logo do time?* (Sim / Não / Pode enviar a imagem aqui no chat)\n` +
+        `5️⃣ *Qual o prazo que precisa das peças prontas?*\n\n` +
+        `✍️ *Envie suas respostas aqui em uma única mensagem* que nosso robô já calcula seu orçamento e nossa equipe dará continuidade imediata! 🚀\n\n` +
+        `_A qualquer momento, digite *menu* para ver outras opções._`;
+
+      await responder(msgAnuncio);
+      return;
+    }
+
+    // =====================================
+    // 1.1 RECONHECIMENTO DE MENSAGENS DO SITE
     // =====================================
     const veioDoSite =
       texto.includes("vim pelo site") ||

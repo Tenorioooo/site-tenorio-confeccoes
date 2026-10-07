@@ -670,8 +670,35 @@ function interpretarRespostaQuestionario(textoOriginal, nomeContato) {
     if (produtoEncontrado) break;
   }
 
-  // Se não encontrou termo específico, tenta pegar da linha 1 ou usa padrão
-  let nomeProduto = produtoEncontrado ? produtoEncontrado.nome : "Camiseta Personalizada 100% Algodão";
+  // Se não encontrou termo específico nos termos oficiais, analisa palavras-chave comuns
+  let nomeProduto = "Camiseta Personalizada 100% Algodão";
+  if (produtoEncontrado) {
+    nomeProduto = produtoEncontrado.nome;
+  } else if (
+    textoLimpo.includes("dry") ||
+    textoLimpo.includes("dryfit") ||
+    textoLimpo.includes("dry-fit") ||
+    textoLimpo.includes("esport") ||
+    textoLimpo.includes("interclasse") ||
+    textoLimpo.includes("time") ||
+    textoLimpo.includes("futebol") ||
+    textoLimpo.includes("corrida") ||
+    textoLimpo.includes("atlet")
+  ) {
+    nomeProduto = "Camiseta Dry-Fit Personalizada";
+  } else if (textoLimpo.includes("polo") || textoLimpo.includes("piquet")) {
+    nomeProduto = "Camisa Polo Personalizada";
+  } else if (textoLimpo.includes("moletom") || textoLimpo.includes("casaco") || textoLimpo.includes("canguru")) {
+    nomeProduto = "Moletom Canguru Personalizado";
+  } else if (textoLimpo.includes("caneca") || textoLimpo.includes("tirante")) {
+    nomeProduto = "Caneca de Alumínio Personalizada";
+  } else if (textoLimpo.includes("abada") || textoLimpo.includes("abadá")) {
+    nomeProduto = "Abadá Personalizado";
+  } else if (textoLimpo.includes("banner") || textoLimpo.includes("wind")) {
+    nomeProduto = "Wind Banner Personalizado";
+  } else if (textoLimpo.includes("bandeira")) {
+    nomeProduto = "Bandeira Personalizada";
+  }
 
   // 2. Identifica Quantidade
   let quantidade = 20; // Padrão razoável caso não informado
