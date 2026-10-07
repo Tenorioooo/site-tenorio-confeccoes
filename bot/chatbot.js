@@ -825,17 +825,75 @@ app.post("/api/tabela", (req, res) => {
   }
 });
 
+function normalizarProdutoParaTabela(prod) {
+  if (!prod) return null;
+  const nome = (prod.nome || "").trim();
+  const precoBase = Number(prod.precoBase ?? prod.precoBaseUnitario ?? 0);
+  const prazoConfeccao = (prod.prazoConfeccao || "15 a 20 dias úteis").trim();
+  const quantidadeMinima = prod.quantidadeMinima ? Number(prod.quantidadeMinima) : null;
+  const permiteDescontoProgressivo = prod.permiteDescontoProgressivo !== false;
+  
+  // Termos de busca
+  let termos = [];
+  if (Array.isArray(prod.termos) && prod.termos.length > 0) termos = prod.termos;
+  else if (Array.isArray(prod.termosIdentificacao) && prod.termosIdentificacao.length > 0) termos = prod.termosIdentificacao;
+  else if (typeof prod.termos === "string") termos = prod.termos.split(",").map(t => t.trim());
+  else if (typeof prod.termosIdentificacao === "string") termos = prod.termosIdentificacao.split(",").map(t => t.trim());
+  if (termos.length === 0 && nome) termos = [nome.toLowerCase()];
+
+  // Pricing tiers (faixas de quantidade)
+  let pricingTiers = [];
+  if (Array.isArray(prod.pricingTiers)) {
+    pricingTiers = prod.pricingTiers.map(t => ({
+      minQty: Number(t.minQty || t.min || 1),
+      maxQty: t.maxQty !== null && t.maxQty !== undefined && t.maxQty !== "" ? Number(t.maxQty || t.max) : null,
+      unitPrice: Number(t.unitPrice || t.preco || 0)
+    })).filter(t => t.minQty > 0 && t.unitPrice > 0);
+  }
+
+  // Variações de modelo / ML
+  let variacoes = [];
+  if (Array.isArray(prod.variacoes)) {
+    variacoes = prod.variacoes.map(v => {
+      const vNome = v.nome || v.termo || "";
+      const vTermos = Array.isArray(v.termos) && v.termos.length > 0 ? v.termos : [vNome.toLowerCase()];
+      const vPreco = Number(v.preco || 0);
+      const vTiers = Array.isArray(v.pricingTiers) ? v.pricingTiers : [];
+      return {
+        nome: vNome,
+        termos: vTermos,
+        preco: vPreco,
+        ...(vTiers.length > 0 ? { pricingTiers: vTiers } : {})
+      };
+    }).filter(v => v.nome && v.preco > 0);
+  }
+
+  return {
+    nome,
+    categoria: prod.categoria || "Geral",
+    termos,
+    precoBase,
+    prazoConfeccao,
+    ...(quantidadeMinima ? { quantidadeMinima } : {}),
+    permiteDescontoProgressivo,
+    ...(pricingTiers.length > 0 ? { pricingTiers } : {}),
+    ...(variacoes.length > 0 ? { variacoes } : {}),
+    ...(prod.observacoes ? { observacoes: prod.observacoes } : {})
+  };
+}
+
 // 6. Adicionar Novo Produto
 app.post("/api/produtos", (req, res) => {
   try {
-    const novoProduto = req.body;
-    if (!novoProduto || !novoProduto.nome) {
+    const rawProd = req.body;
+    if (!rawProd || !rawProd.nome) {
       return res.status(400).json({ success: false, message: "Nome do produto é obrigatório." });
     }
+    const novoProduto = normalizarProdutoParaTabela(rawProd);
     const tabela = carregarTabelaPrecos();
     tabela.produtos.push(novoProduto);
     salvarTabelaPrecos(tabela);
-    console.log(`➕ [API] Novo produto cadastrado: ${novoProduto.nome}`);
+    console.log(`➕ [API] Novo produto cadastrado: ${novoProduto.nome} (Prazo: ${novoProduto.prazoConfeccao}, Preço: R$ ${novoProduto.precoBase})`);
     res.json({ success: true, message: "Produto cadastrado com sucesso!", produto: novoProduto, tabela });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -846,13 +904,14 @@ app.post("/api/produtos", (req, res) => {
 app.put("/api/produtos/:index", (req, res) => {
   try {
     const index = parseInt(req.params.index, 10);
-    const produtoEditado = req.body;
+    const rawProd = req.body;
     const tabela = carregarTabelaPrecos();
 
     if (isNaN(index) || index < 0 || index >= tabela.produtos.length) {
       return res.status(404).json({ success: false, message: "Produto não encontrado." });
     }
 
+    const produtoEditado = normalizarProdutoParaTabela(rawProd);
     tabela.produtos[index] = produtoEditado;
     salvarTabelaPrecos(tabela);
     console.log(`✏️ [API] Produto editado: ${produtoEditado.nome} (índice ${index})`);

@@ -30,15 +30,26 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+interface PricingTierItem {
+  minQty: number;
+  maxQty?: number | null;
+  unitPrice: number;
+}
+
 interface ProdutoTabela {
   nome: string;
   categoria?: string;
-  termosIdentificacao: string[];
-  precoBaseUnitario: number;
+  termos?: string[];
+  termosIdentificacao?: string[];
+  precoBase?: number;
+  precoBaseUnitario?: number;
+  prazoConfeccao?: string;
+  quantidadeMinima?: number | null;
+  pricingTiers?: PricingTierItem[];
   gradeTamanhos?: string[];
   coresDisponiveis?: string[];
   permiteDescontoProgressivo?: boolean;
-  variacoes?: { termo: string; preco: number }[];
+  variacoes?: Array<{ nome?: string; termo?: string; termos?: string[]; preco: number; pricingTiers?: PricingTierItem[] }>;
   observacoes?: string;
 }
 
@@ -111,11 +122,14 @@ export default function ChatbotAdminTab() {
   const [novoProdutoModal, setNovoProdutoModal] = useState(false);
   const [produtoForm, setProdutoForm] = useState<ProdutoTabela>({
     nome: '',
-    categoria: '',
+    categoria: 'Geral',
     termosIdentificacao: [],
     precoBaseUnitario: 0,
-    gradeTamanhos: [],
-    coresDisponiveis: [],
+    prazoConfeccao: '15 a 20 dias úteis',
+    quantidadeMinima: null,
+    pricingTiers: [],
+    gradeTamanhos: ['P', 'M', 'G', 'GG'],
+    coresDisponiveis: ['Branco', 'Preto'],
     permiteDescontoProgressivo: true,
     variacoes: [],
     observacoes: ''
@@ -126,6 +140,7 @@ export default function ChatbotAdminTab() {
   const [gradeInput, setGradeInput] = useState('');
   const [coresInput, setCoresInput] = useState('');
   const [variacoesInput, setVariacoesInput] = useState('');
+  const [pricingTiersInput, setPricingTiersInput] = useState('');
 
   const configLoadedRef = React.useRef(false);
 
@@ -406,12 +421,30 @@ export default function ChatbotAdminTab() {
 
   const abrirEdicaoProduto = (prod: ProdutoTabela, index: number) => {
     setEditingIndex(index);
-    setProdutoForm({ ...prod });
-    setTermosInput((prod.termosIdentificacao || []).join(', '));
+    setProdutoForm({
+      ...prod,
+      precoBaseUnitario: prod.precoBase ?? prod.precoBaseUnitario ?? 0,
+      prazoConfeccao: prod.prazoConfeccao || '15 a 20 dias úteis',
+      quantidadeMinima: prod.quantidadeMinima || null,
+      permiteDescontoProgressivo: prod.permiteDescontoProgressivo !== false,
+    });
+    setTermosInput((prod.termos || prod.termosIdentificacao || []).join(', '));
     setGradeInput((prod.gradeTamanhos || []).join(', '));
     setCoresInput((prod.coresDisponiveis || []).join(', '));
+    
+    // Formata faixas de preço (pricing tiers)
+    if (Array.isArray(prod.pricingTiers) && prod.pricingTiers.length > 0) {
+      setPricingTiersInput(
+        prod.pricingTiers
+          .map((t) => (t.maxQty ? `${t.minQty} a ${t.maxQty}: ${t.unitPrice}` : `${t.minQty}+: ${t.unitPrice}`))
+          .join('\n')
+      );
+    } else {
+      setPricingTiersInput('');
+    }
+
     setVariacoesInput(
-      (prod.variacoes || []).map((v) => `${v.termo}: ${Number(v.preco ?? 0).toFixed(2)}`).join('\n')
+      (prod.variacoes || []).map((v) => `${v.nome || v.termo}: ${Number(v.preco ?? 0).toFixed(2)}`).join('\n')
     );
   };
 
@@ -420,8 +453,13 @@ export default function ChatbotAdminTab() {
     setProdutoForm({
       nome: '',
       categoria: 'Geral',
+      termos: [],
       termosIdentificacao: [],
+      precoBase: 0,
       precoBaseUnitario: 0,
+      prazoConfeccao: '15 a 20 dias úteis',
+      quantidadeMinima: null,
+      pricingTiers: [],
       gradeTamanhos: ['P', 'M', 'G', 'GG'],
       coresDisponiveis: ['Branco', 'Preto'],
       permiteDescontoProgressivo: true,
@@ -429,6 +467,7 @@ export default function ChatbotAdminTab() {
       observacoes: ''
     });
     setTermosInput('');
+    setPricingTiersInput('1 a 10: 49.90\n11+: 45.80');
     setGradeInput('P, M, G, GG');
     setCoresInput('Branco, Preto');
     setVariacoesInput('');
@@ -456,24 +495,76 @@ export default function ChatbotAdminTab() {
       .map((c) => c.trim())
       .filter(Boolean);
 
-    const variacoesParsed: { termo: string; preco: number }[] = [];
+    // Parsing das faixas de preço por quantidade (pricingTiers)
+    const pricingTiersParsed: PricingTierItem[] = [];
+    if (pricingTiersInput.trim()) {
+      const linhasTiers = pricingTiersInput.split('\n');
+      for (const linha of linhasTiers) {
+        if (!linha.trim()) continue;
+        const partes = linha.split(':');
+        if (partes.length >= 2) {
+          const faixaStr = partes[0].toLowerCase().trim();
+          const preco = parseFloat(partes[1].replace(',', '.').replace(/[^0-9.]/g, '').trim());
+          if (!isNaN(preco) && preco > 0) {
+            let minQty = 1;
+            let maxQty: number | null = null;
+            if (faixaStr.includes('a') || faixaStr.includes('-')) {
+              const numMatch = faixaStr.match(/(\d+)\s*(?:a|-)\s*(\d+)/);
+              if (numMatch) {
+                minQty = parseInt(numMatch[1], 10);
+                maxQty = parseInt(numMatch[2], 10);
+              }
+            } else if (faixaStr.includes('+') || faixaStr.includes('mais')) {
+              const numMatch = faixaStr.match(/(\d+)/);
+              if (numMatch) {
+                minQty = parseInt(numMatch[1], 10);
+                maxQty = null;
+              }
+            } else {
+              const numMatch = faixaStr.match(/(\d+)/);
+              if (numMatch) {
+                minQty = parseInt(numMatch[1], 10);
+                maxQty = null;
+              }
+            }
+            pricingTiersParsed.push({ minQty, maxQty, unitPrice: preco });
+          }
+        }
+      }
+    }
+
+    // Parsing de variações
+    const variacoesParsed: Array<{ nome: string; termo: string; termos: string[]; preco: number }> = [];
     if (variacoesInput.trim()) {
       const linhas = variacoesInput.split('\n');
       for (const linha of linhas) {
         const partes = linha.split(':');
         if (partes.length >= 2) {
           const termo = partes[0].trim();
-          const preco = parseFloat(partes[1].replace(',', '.').trim());
+          const preco = parseFloat(partes[1].replace(',', '.').replace(/[^0-9.]/g, '').trim());
           if (termo && !isNaN(preco)) {
-            variacoesParsed.push({ termo, preco });
+            variacoesParsed.push({
+              nome: termo,
+              termo,
+              termos: [termo.toLowerCase()],
+              preco
+            });
           }
         }
       }
     }
 
+    const precoBase = Number(produtoForm.precoBaseUnitario || produtoForm.precoBase || 0);
+
     const payload: ProdutoTabela = {
       ...produtoForm,
+      precoBase,
+      precoBaseUnitario: precoBase,
+      prazoConfeccao: produtoForm.prazoConfeccao || '15 a 20 dias úteis',
+      quantidadeMinima: produtoForm.quantidadeMinima ? Number(produtoForm.quantidadeMinima) : null,
+      termos: termos.length > 0 ? termos : [produtoForm.nome.toLowerCase()],
       termosIdentificacao: termos.length > 0 ? termos : [produtoForm.nome.toLowerCase()],
+      pricingTiers: pricingTiersParsed.length > 0 ? pricingTiersParsed : undefined,
       gradeTamanhos: grade,
       coresDisponiveis: cores,
       variacoes: variacoesParsed
@@ -488,7 +579,7 @@ export default function ChatbotAdminTab() {
           body: JSON.stringify(payload)
         });
         if (res.ok) {
-          toast.success('Produto atualizado com sucesso!');
+          toast.success('Produto atualizado com sucesso no robô!');
           setEditingIndex(null);
           carregarTabela();
         }
@@ -499,7 +590,7 @@ export default function ChatbotAdminTab() {
           body: JSON.stringify(payload)
         });
         if (res.ok) {
-          toast.success('Produto cadastrado com sucesso!');
+          toast.success('Produto cadastrado com sucesso no robô!');
           setNovoProdutoModal(false);
           carregarTabela();
         }
@@ -1119,7 +1210,7 @@ export default function ChatbotAdminTab() {
             {tabela?.produtos.map((prod, index) => (
               <div
                 key={index}
-                className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex flex-col justify-between"
+                className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex flex-col justify-between hover:border-slate-700 transition"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
@@ -1132,30 +1223,58 @@ export default function ChatbotAdminTab() {
                   <div className="mt-3 space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-400">Preço Base:</span>
-                      <span className="font-bold text-emerald-400">
-                        {Number(prod.precoBaseUnitario ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      <span className="font-bold text-emerald-400 text-sm">
+                        {Number(prod.precoBase ?? prod.precoBaseUnitario ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400">Desconto Progressivo:</span>
-                      <span
-                        className={`font-semibold ${
-                          prod.permiteDescontoProgressivo === false ? 'text-amber-400' : 'text-emerald-400'
-                        }`}
-                      >
-                        {prod.permiteDescontoProgressivo === false ? 'Não (Fixo)' : 'Sim (Por Volume)'}
+                      <span className="text-slate-400">Prazo de Confecção:</span>
+                      <span className="font-semibold text-slate-200 flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-blue-400" />
+                        {prod.prazoConfeccao || '15 a 20 dias úteis'}
                       </span>
                     </div>
 
+                    {prod.quantidadeMinima ? (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Pedido Mínimo:</span>
+                        <span className="font-semibold text-amber-400">
+                          {prod.quantidadeMinima} unidades
+                        </span>
+                      </div>
+                    ) : null}
+
+                    {/* Faixas de preço por quantidade / Preços Progressivos */}
+                    {prod.pricingTiers && prod.pricingTiers.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-800/60">
+                        <p className="text-[11px] font-semibold text-blue-400 mb-1 flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" /> Preços por Quantidade:
+                        </p>
+                        <div className="space-y-1">
+                          {prod.pricingTiers.map((t, ti) => (
+                            <div key={ti} className="flex justify-between text-[11px] text-slate-300 bg-slate-950/40 px-2 py-1 rounded-lg border border-slate-800/40">
+                              <span>• {t.maxQty ? `${t.minQty} a ${t.maxQty} un` : `${t.minQty}+ un`}</span>
+                              <span className="font-mono font-bold text-emerald-400">
+                                {Number(t.unitPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/un
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Variações específicas */}
                     {prod.variacoes && prod.variacoes.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-slate-800/60">
                         <p className="text-[11px] font-semibold text-slate-400 mb-1">Variações Cadastradas:</p>
                         <div className="space-y-1">
                           {prod.variacoes.map((v, vi) => (
-                            <div key={vi} className="flex justify-between text-[11px] text-slate-300">
-                              <span>• {v.termo}</span>
-                              <span className="font-mono text-emerald-400">R$ {Number(v.preco ?? 0).toFixed(2)}</span>
+                            <div key={vi} className="flex justify-between text-[11px] text-slate-300 bg-slate-950/30 px-2 py-0.5 rounded">
+                              <span>• {v.nome || v.termo}</span>
+                              <span className="font-mono text-emerald-400">
+                                {Number(v.preco ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -1168,12 +1287,14 @@ export default function ChatbotAdminTab() {
                   <button
                     onClick={() => abrirEdicaoProduto(prod, index)}
                     className="p-2 rounded-xl text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition"
+                    title="Editar produto"
                   >
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => excluirProduto(index)}
                     className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                    title="Excluir produto"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -1187,11 +1308,16 @@ export default function ChatbotAdminTab() {
       {/* MODAL DE EDIÇÃO / CRIAÇÃO DE PRODUTO */}
       {(editingIndex !== null || novoProdutoModal) && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="text-lg font-bold text-slate-100">
-                {editingIndex !== null ? 'Editar Produto da Tabela' : 'Novo Produto para o Robô'}
-              </h3>
+              <div>
+                <h3 className="text-lg font-bold text-slate-100">
+                  {editingIndex !== null ? 'Editar Produto da Tabela do Robô' : 'Novo Produto para o Robô'}
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Configure preços base, prazos de confecção e faixas progressivas de quantidade lidas pelo chatbot.
+                </p>
+              </div>
               <button
                 onClick={() => {
                   setEditingIndex(null);
@@ -1210,25 +1336,25 @@ export default function ChatbotAdminTab() {
                   type="text"
                   value={produtoForm.nome}
                   onChange={(e) => setProdutoForm({ ...produtoForm, nome: e.target.value })}
-                  placeholder="Ex: Camiseta Algodão 100%"
+                  placeholder="Ex: Camiseta 100% Algodão Personalizada"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">Categoria:</label>
                   <input
                     type="text"
                     value={produtoForm.categoria}
                     onChange={(e) => setProdutoForm({ ...produtoForm, categoria: e.target.value })}
-                    placeholder="Ex: Camisetas, Brindes, etc."
+                    placeholder="Ex: Camisetas, Moletons, Brindes"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Preço Base Unitário (R$):</label>
+                  <label className="block text-slate-300 font-semibold mb-1">Preço Base (1 un) (R$):</label>
                   <input
                     type="number"
                     step="0.01"
@@ -1236,39 +1362,98 @@ export default function ChatbotAdminTab() {
                     onChange={(e) =>
                       setProdutoForm({ ...produtoForm, precoBaseUnitario: parseFloat(e.target.value) || 0 })
                     }
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500 font-bold text-emerald-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Qtd Mínima (Opcional):</label>
+                  <input
+                    type="number"
+                    value={produtoForm.quantidadeMinima || ''}
+                    onChange={(e) =>
+                      setProdutoForm({
+                        ...produtoForm,
+                        quantidadeMinima: e.target.value ? parseInt(e.target.value, 10) : null
+                      })
+                    }
+                    placeholder="Ex: 10 ou 20"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
+              {/* Prazo de Confecção */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-300 font-semibold">Prazo de Confecção / Entrega:</label>
+                  <div className="flex gap-1">
+                    {['15 a 20 dias úteis', '20 a 25 dias úteis', '30 a 40 dias úteis'].map((pz) => (
+                      <button
+                        key={pz}
+                        type="button"
+                        onClick={() => setProdutoForm({ ...produtoForm, prazoConfeccao: pz })}
+                        className="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                      >
+                        {pz.split(' ')[0]} {pz.split(' ')[1]} {pz.split(' ')[2]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={produtoForm.prazoConfeccao || ''}
+                  onChange={(e) => setProdutoForm({ ...produtoForm, prazoConfeccao: e.target.value })}
+                  placeholder="Ex: 15 a 20 dias úteis"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Faixas de Preço por Quantidade (Pricing Tiers) */}
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-blue-900/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-blue-400 font-bold flex items-center gap-1.5">
+                      <DollarSign className="h-3.5 w-3.5" />
+                      Preços Progressivos / Faixas por Quantidade (Pricing Tiers):
+                    </label>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Defina os valores reduzidos por faixa de quantidade (uma por linha, formato: <code>Faixa: Valor</code>):
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setPricingTiersInput('1 a 10: 49.90\n11+: 45.80')}
+                      className="text-[10px] px-2 py-1 rounded bg-blue-950/60 hover:bg-blue-900/80 text-blue-300 border border-blue-800/40 font-medium transition"
+                    >
+                      Ex: 11+ peças (-R$ 4,10)
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  rows={3}
+                  value={pricingTiersInput}
+                  onChange={(e) => setPricingTiersInput(e.target.value)}
+                  placeholder={"1 a 10: 49.90\n11+: 45.80\n50+: 39.90"}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-300 font-mono text-xs focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-[10px] text-slate-500">
+                  💡 <em>Exemplo: Ao cotar 15 peças, o robô lerá a faixa &quot;11+&quot; e aplicará automaticamente o valor unitário configurado.</em>
+                </p>
+              </div>
+
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">
-                  Termos de Identificação (separados por vírgula):
+                  Termos de Identificação no WhatsApp (separados por vírgula):
                 </label>
                 <input
                   type="text"
                   value={termosInput}
                   onChange={(e) => setTermosInput(e.target.value)}
-                  placeholder="Ex: algodao, algodão, camiseta algodao"
+                  placeholder="Ex: algodao, algodão, camiseta algodao, 100% algodao"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500"
                 />
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={produtoForm.permiteDescontoProgressivo !== false}
-                    onChange={(e) =>
-                      setProdutoForm({ ...produtoForm, permiteDescontoProgressivo: e.target.checked })
-                    }
-                    className="h-4 w-4 rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0"
-                  />
-                  <span className="font-semibold text-slate-200">Permitir Desconto Progressivo por Quantidade</span>
-                </label>
-                <p className="text-[11px] text-slate-400">
-                  Desmarque para produtos com valores fixos independentes da quantidade (ex: Canecas, Wind Banners).
-                </p>
               </div>
 
               <div>
@@ -1279,7 +1464,7 @@ export default function ChatbotAdminTab() {
                   rows={3}
                   value={variacoesInput}
                   onChange={(e) => setVariacoesInput(e.target.value)}
-                  placeholder={"400ml: 24.90\n500ml: 28.46\n700ml: 34.90"}
+                  placeholder={"300ml: 28.46\n500ml: 31.66\n700ml: 36.86\nKit Suporte + Wind Banner: 289.80"}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 font-mono text-xs focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -1300,7 +1485,7 @@ export default function ChatbotAdminTab() {
                 disabled={actionLoading}
                 className="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition shadow-lg shadow-blue-600/20"
               >
-                Salvar Produto
+                Salvar Produto no Robô
               </button>
             </div>
           </div>
