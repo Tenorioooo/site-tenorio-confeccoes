@@ -72,6 +72,15 @@ interface ProdutoTabela {
 
 interface TabelaPrecos {
   produtos: ProdutoTabela[];
+  precoPadrao?: number;
+  prazoPadrao?: string;
+  custoAdicionalPorLocalExtra?: number;
+  descontoProgressivo?: Array<{ min: number; max: number; percentual: number; descricao?: string }>;
+  informacoesPagamento?: {
+    forma?: string;
+    condicao?: string;
+    prazoProducao?: string;
+  };
   regrasDesconto?: { quantidadeMinima: number; percentualDesconto: number }[];
   termosGlobaisIsencaoDesconto?: string[];
 }
@@ -982,47 +991,106 @@ export default function ChatbotAdminTab() {
 
     try {
       setActionLoading(true);
+
+      // Clona produtos existentes ou inicializa array
+      const produtosAtuais = tabela?.produtos ? [...tabela.produtos] : [];
+      let novosProdutos: ProdutoTabela[];
+
       if (editingIndex !== null) {
-        const res = await fetch(`${botUrl}/api/produtos/${editingIndex}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          toast.success('Produto atualizado com sucesso no robô!');
-          setEditingIndex(null);
-          carregarTabela();
-        }
+        produtosAtuais[editingIndex] = payload;
+        novosProdutos = produtosAtuais;
       } else {
-        const res = await fetch(`${botUrl}/api/produtos`, {
+        novosProdutos = [...produtosAtuais, payload];
+      }
+
+      const novaTabela: TabelaPrecos = {
+        produtos: novosProdutos,
+        precoPadrao: tabela?.precoPadrao ?? 39.9,
+        prazoPadrao: tabela?.prazoPadrao ?? '7 a 12 dias úteis',
+        custoAdicionalPorLocalExtra: tabela?.custoAdicionalPorLocalExtra ?? 5.0,
+        descontoProgressivo: tabela?.descontoProgressivo ?? [
+          { min: 1, max: 10, percentual: 0, descricao: 'Sem desconto' },
+          { min: 11, max: 99999, percentual: 0, descricao: 'Sem desconto' }
+        ],
+        informacoesPagamento: tabela?.informacoesPagamento ?? {
+          forma: 'PIX',
+          condicao: '50% de entrada para início da confecção + 50% na conclusão/despacho do pedido.',
+          prazoProducao: '7 a 12 dias úteis após a aprovação do layout virtual.'
+        }
+      };
+
+      // Atualiza estado do React imediatamente para feedback instantâneo na UI
+      setTabela(novaTabela);
+
+      // 1. Salva no banco de dados e nuvem via API Next.js
+      const resSite = await fetch('/api/admin/chatbot/tabela', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novaTabela)
+      });
+
+      // 2. Sincroniza com o bot local se estiver rodando
+      try {
+        await fetch(`${botUrl}/api/tabela`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          toast.success('Produto cadastrado com sucesso no robô!');
-          setNovoProdutoModal(false);
-          carregarTabela();
-        }
+          body: JSON.stringify(novaTabela)
+        }).catch(() => {});
+      } catch (e) {}
+
+      if (editingIndex !== null) {
+        toast.success('Produto atualizado com sucesso!');
+        setEditingIndex(null);
+      } else {
+        toast.success('Produto cadastrado com sucesso!');
+        setNovoProdutoModal(false);
       }
-    } catch (e) {
-      toast.error('Erro ao salvar produto.');
+    } catch (e: any) {
+      toast.error('Erro ao salvar produto: ' + (e?.message || 'Falha na conexão'));
     } finally {
       setActionLoading(false);
     }
   };
 
   const excluirProduto = async (index: number) => {
-    if (!confirm('Deseja excluir este produto da tabela do robô?')) return;
+    const prodNome = tabela?.produtos?.[index]?.nome || 'este produto';
+    if (!confirm(`Deseja realmente excluir ${prodNome} da tabela de preços?`)) return;
+
     try {
       setActionLoading(true);
-      const res = await fetch(`${botUrl}/api/produtos/${index}`, { method: 'DELETE' });
-      if (res.ok) {
-        toast.success('Produto removido!');
-        carregarTabela();
-      }
-    } catch (e) {
-      toast.error('Erro ao excluir produto.');
+      const produtosAtuais = tabela?.produtos ? [...tabela.produtos] : [];
+      produtosAtuais.splice(index, 1);
+
+      const novaTabela: TabelaPrecos = {
+        produtos: produtosAtuais,
+        precoPadrao: tabela?.precoPadrao ?? 39.9,
+        prazoPadrao: tabela?.prazoPadrao ?? '7 a 12 dias úteis',
+        custoAdicionalPorLocalExtra: tabela?.custoAdicionalPorLocalExtra ?? 5.0,
+        descontoProgressivo: tabela?.descontoProgressivo ?? [],
+        informacoesPagamento: tabela?.informacoesPagamento ?? {}
+      };
+
+      // Atualiza interface imediatamente
+      setTabela(novaTabela);
+
+      // Salva na nuvem e no robô
+      await fetch('/api/admin/chatbot/tabela', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novaTabela)
+      });
+
+      try {
+        await fetch(`${botUrl}/api/tabela`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(novaTabela)
+        }).catch(() => {});
+      } catch (e) {}
+
+      toast.success('Produto removido da tabela!');
+    } catch (e: any) {
+      toast.error('Erro ao excluir produto: ' + (e?.message || 'Falha na conexão'));
     } finally {
       setActionLoading(false);
     }

@@ -10,18 +10,18 @@
         "camiseta 100% algodão"
       ],
       "nome": "Camiseta 100% Algodão Personalizada",
-      "precoBase": 49.90,
+      "precoBase": 49.9,
       "prazoConfeccao": "15 a 20 dias úteis",
       "pricingTiers": [
         {
           "minQty": 1,
           "maxQty": 10,
-          "unitPrice": 49.90
+          "unitPrice": 49.9
         },
         {
           "minQty": 11,
           "maxQty": null,
-          "unitPrice": 45.80
+          "unitPrice": 45.8
         }
       ]
     },
@@ -32,18 +32,18 @@
         "dryfit"
       ],
       "nome": "Camiseta Dry-Fit Personalizada",
-      "precoBase": 64.90,
+      "precoBase": 64.9,
       "prazoConfeccao": "30 a 40 dias úteis",
       "pricingTiers": [
         {
           "minQty": 1,
           "maxQty": 10,
-          "unitPrice": 64.90
+          "unitPrice": 64.9
         },
         {
           "minQty": 11,
           "maxQty": null,
-          "unitPrice": 59.90
+          "unitPrice": 59.9
         }
       ]
     },
@@ -54,18 +54,18 @@
         "piquet"
       ],
       "nome": "Camisa Polo Personalizada",
-      "precoBase": 74.90,
+      "precoBase": 74.9,
       "prazoConfeccao": "15 a 20 dias úteis",
       "pricingTiers": [
         {
           "minQty": 1,
           "maxQty": 10,
-          "unitPrice": 74.90
+          "unitPrice": 74.9
         },
         {
           "minQty": 11,
           "maxQty": null,
-          "unitPrice": 69.90
+          "unitPrice": 69.9
         }
       ]
     },
@@ -77,18 +77,18 @@
         "casaco"
       ],
       "nome": "Moletom Canguru Personalizado",
-      "precoBase": 119.90,
+      "precoBase": 119.9,
       "prazoConfeccao": "15 a 20 dias úteis",
       "pricingTiers": [
         {
           "minQty": 1,
           "maxQty": 10,
-          "unitPrice": 119.90
+          "unitPrice": 119.9
         },
         {
           "minQty": 11,
           "maxQty": null,
-          "unitPrice": 115.80
+          "unitPrice": 115.8
         }
       ]
     },
@@ -195,12 +195,12 @@
             "750 ml",
             "750"
           ],
-          "preco": 41.40,
+          "preco": 41.4,
           "pricingTiers": [
             {
               "minQty": 20,
               "maxQty": null,
-              "unitPrice": 41.40
+              "unitPrice": 41.4
             }
           ]
         },
@@ -243,12 +243,12 @@
             "850 ml",
             "850"
           ],
-          "preco": 35.90,
+          "preco": 35.9,
           "pricingTiers": [
             {
               "minQty": 20,
               "maxQty": null,
-              "unitPrice": 35.90
+              "unitPrice": 35.9
             }
           ]
         },
@@ -257,16 +257,92 @@
           "termos": [
             "nome individual"
           ],
-          "preco": 4.00,
+          "preco": 4,
           "pricingTiers": [
             {
               "minQty": 1,
               "maxQty": null,
-              "unitPrice": 4.00
+              "unitPrice": 4
             }
           ]
         }
-      ]
+      ],
+      "pricingConfig": {
+        "mode": "by_variant",
+        "variantTiers": {
+          "300ML": [
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 28.46
+            }
+          ],
+          "450ML": [
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 38.38
+            }
+          ],
+          "500ML": [
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 31.66
+            }
+          ],
+          "600ML": [
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 33.24
+            }
+          ],
+          "700ML": [
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 36.86
+            }
+          ],
+          "750ML": [
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 41.4
+            }
+          ],
+          "790ML": [
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 48.44
+            }
+          ],
+          "800ML": [
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 33.56
+            }
+          ],
+          "850ML": [
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 35.9
+            }
+          ],
+          "NOME INDIVIDUAL": [
+            {
+              "minQty": 1,
+              "maxQty": null,
+              "unitPrice": 4
+            }
+          ]
+        },
+        "tiers": []
+      }
     },
     {
       "termos": [
@@ -276,7 +352,7 @@
         "flag banner"
       ],
       "nome": "Wind Banner Personalizado",
-      "precoBase": 129.80,
+      "precoBase": 129.8,
       "permiteDescontoProgressivo": false,
       "prazoConfeccao": "30 a 40 dias úteis",
       "variacoes": [
@@ -287,12 +363,12 @@
             "tamanho unico",
             "wind banner"
           ],
-          "preco": 129.80,
+          "preco": 129.8,
           "pricingTiers": [
             {
               "minQty": 1,
               "maxQty": null,
-              "unitPrice": 129.80
+              "unitPrice": 129.8
             }
           ]
         },
@@ -302,16 +378,36 @@
             "kit suporte",
             "suporte"
           ],
-          "preco": 289.80,
+          "preco": 289.8,
           "pricingTiers": [
             {
               "minQty": 1,
               "maxQty": null,
-              "unitPrice": 289.80
+              "unitPrice": 289.8
             }
           ]
         }
-      ]
+      ],
+      "pricingConfig": {
+        "mode": "by_variant",
+        "variantTiers": {
+          "Tamanho Único": [
+            {
+              "minQty": 1,
+              "maxQty": null,
+              "unitPrice": 129.8
+            }
+          ],
+          "KIT SUPORTE + WIND BANNER": [
+            {
+              "minQty": 1,
+              "maxQty": null,
+              "unitPrice": 289.8
+            }
+          ]
+        },
+        "tiers": []
+      }
     },
     {
       "termos": [
@@ -321,13 +417,13 @@
         "bandeira personalizada"
       ],
       "nome": "Bandeira Personalizada",
-      "precoBase": 99.80,
+      "precoBase": 99.8,
       "prazoConfeccao": "30 a 40 dias úteis",
       "pricingTiers": [
         {
           "minQty": 1,
           "maxQty": null,
-          "unitPrice": 99.80
+          "unitPrice": 99.8
         }
       ]
     },
@@ -339,7 +435,7 @@
         "abadá personalizado"
       ],
       "nome": "Abadá Personalizado",
-      "precoBase": 49.80,
+      "precoBase": 49.8,
       "quantidadeMinima": 10,
       "permiteDescontoProgressivo": false,
       "prazoConfeccao": "30 a 40 dias úteis",
@@ -347,14 +443,113 @@
         {
           "minQty": 10,
           "maxQty": null,
-          "unitPrice": 49.80
+          "unitPrice": 49.8
+        }
+      ]
+    },
+    {
+      "nome": "Camiseta Oversized Algodão",
+      "categoria": "Geral",
+      "termos": [
+        "Camiseta Oversized Algodão",
+        "Oversized Algodão",
+        "Oversized Algodao",
+        "Camiseta Oversized Algodao"
+      ],
+      "precoBase": 0,
+      "prazoConfeccao": "7 a 15 dias úteis",
+      "quantidadeMinima": 1,
+      "permiteDescontoProgressivo": true,
+      "pricingTiers": [
+        {
+          "minQty": 1,
+          "maxQty": 10,
+          "unitPrice": 67.8
+        },
+        {
+          "minQty": 11,
+          "maxQty": null,
+          "unitPrice": 65.8
+        }
+      ]
+    },
+    {
+      "nome": "Camiseta Oversized Suedine",
+      "categoria": "Geral",
+      "termos": [
+        "Camiseta Oversized Suedine",
+        "Oversized Suedine",
+        "Suedine"
+      ],
+      "precoBase": 0,
+      "prazoConfeccao": "7 a 15 dias úteis",
+      "quantidadeMinima": 1,
+      "permiteDescontoProgressivo": true,
+      "pricingTiers": [
+        {
+          "minQty": 1,
+          "maxQty": 10,
+          "unitPrice": 85.8
+        },
+        {
+          "minQty": 11,
+          "maxQty": null,
+          "unitPrice": 81.8
+        }
+      ]
+    },
+    {
+      "nome": "Camiseta Regata",
+      "categoria": "Geral",
+      "termos": [
+        "Camiseta Regata",
+        "Regata"
+      ],
+      "precoBase": 0,
+      "prazoConfeccao": "7 a 15 dias úteis",
+      "quantidadeMinima": 1,
+      "permiteDescontoProgressivo": true,
+      "pricingTiers": [
+        {
+          "minQty": 1,
+          "maxQty": 10,
+          "unitPrice": 47.8
+        },
+        {
+          "minQty": 11,
+          "maxQty": null,
+          "unitPrice": 45.8
+        }
+      ]
+    },
+    {
+      "nome": "Camiseta Manga Longa",
+      "categoria": "Geral",
+      "termos": [
+        "Camiseta Manga Longa",
+        "Manga Longa"
+      ],
+      "precoBase": 0,
+      "prazoConfeccao": "7 a 15 dias úteis",
+      "quantidadeMinima": 1,
+      "permiteDescontoProgressivo": true,
+      "pricingTiers": [
+        {
+          "minQty": 1,
+          "maxQty": 10,
+          "unitPrice": 49.8
+        },
+        {
+          "minQty": 11,
+          "maxQty": null,
+          "unitPrice": 47.8
         }
       ]
     }
   ],
-  "precoPadrao": 39.90,
+  "precoPadrao": 39.9,
   "prazoPadrao": "7 a 12 dias úteis",
-  "custoAdicionalPorLocalExtra": 5.00,
+  "custoAdicionalPorLocalExtra": 5,
   "descontoProgressivo": [
     {
       "min": 1,
