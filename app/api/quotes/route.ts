@@ -53,51 +53,115 @@ export async function POST(request: Request) {
       );
     }
 
-    const quoteCode = generateQuoteCode();
+    const quoteCode = (body.quoteCode && typeof body.quoteCode === 'string' && body.quoteCode.trim().length > 0)
+      ? body.quoteCode.trim()
+      : generateQuoteCode();
 
-    const createdQuote = await prisma.quote.create({
-      data: {
-        quoteCode,
-        customerName,
-        whatsapp,
-        email: email || null,
-        city: city || null,
-        state: state || null,
-        desiredDate: desiredDate || null,
-        notes: notes || null,
-        estimatedTotal: estimatedTotal ? Number(estimatedTotal) : null,
-        status: 'Recebido',
-      },
+    // Verifica se já existe um orçamento com esse código
+    const existing = await prisma.quote.findUnique({
+      where: { quoteCode },
+      include: { items: true },
     });
 
-    for (const item of items) {
-      const createdItem = await prisma.quoteItem.create({
+    let createdQuote;
+    if (existing) {
+      createdQuote = await prisma.quote.update({
+        where: { id: existing.id },
         data: {
-          quoteId: createdQuote.id,
-          productId: item.productId || null,
-          productName: item.productName,
-          printId: item.printId || null,
-          printCode: item.printCode || null,
-          printName: item.printName || null,
-          quantity: item.quantity || 1,
-          unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
-          totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
-          customizationPositions: JSON.stringify(item.customizationPositions || ['Frente']),
-          hasCustomArt: Boolean(item.hasCustomArt),
-          notes: item.notes || null,
+          customerName: customerName || existing.customerName,
+          whatsapp: whatsapp || existing.whatsapp,
+          email: email !== undefined ? (email || null) : existing.email,
+          city: city !== undefined ? (city || null) : existing.city,
+          state: state !== undefined ? (state || null) : existing.state,
+          desiredDate: desiredDate !== undefined ? (desiredDate || null) : existing.desiredDate,
+          notes: notes !== undefined ? (notes || null) : existing.notes,
+          estimatedTotal: estimatedTotal ? Number(estimatedTotal) : existing.estimatedTotal,
         },
       });
 
-      if (item.sizes && typeof item.sizes === 'object') {
-        const sizeEntries = Object.entries(item.sizes).filter(([, q]) => (q as number) > 0);
-        if (sizeEntries.length > 0) {
-          await prisma.quoteSize.createMany({
-            data: sizeEntries.map(([size, quantity]) => ({
-              quoteItemId: createdItem.id,
-              size,
-              quantity: quantity as number,
-            })),
+      // Se o orçamento existente não tinha itens salvos e agora tem itens, cria-os
+      if (existing.items.length === 0 && items.length > 0) {
+        for (const item of items) {
+          const createdItem = await prisma.quoteItem.create({
+            data: {
+              quoteId: createdQuote.id,
+              productId: item.productId || null,
+              productName: item.productName || 'Produto Personalizado',
+              printId: item.printId || null,
+              printCode: item.printCode || null,
+              printName: item.printName || null,
+              quantity: item.quantity || 1,
+              unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
+              totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
+              customizationPositions: typeof item.customizationPositions === 'string'
+                ? item.customizationPositions
+                : JSON.stringify(item.customizationPositions || ['Frente']),
+              hasCustomArt: Boolean(item.hasCustomArt),
+              notes: item.notes || null,
+            },
           });
+
+          if (item.sizes && typeof item.sizes === 'object') {
+            const sizeEntries = Object.entries(item.sizes).filter(([, q]) => Number(q) > 0);
+            if (sizeEntries.length > 0) {
+              await prisma.quoteSize.createMany({
+                data: sizeEntries.map(([size, quantity]) => ({
+                  quoteItemId: createdItem.id,
+                  size,
+                  quantity: Number(quantity),
+                })),
+              });
+            }
+          }
+        }
+      }
+    } else {
+      createdQuote = await prisma.quote.create({
+        data: {
+          quoteCode,
+          customerName,
+          whatsapp,
+          email: email || null,
+          city: city || null,
+          state: state || null,
+          desiredDate: desiredDate || null,
+          notes: notes || null,
+          estimatedTotal: estimatedTotal ? Number(estimatedTotal) : null,
+          status: 'Recebido',
+        },
+      });
+
+      for (const item of items) {
+        const createdItem = await prisma.quoteItem.create({
+          data: {
+            quoteId: createdQuote.id,
+            productId: item.productId || null,
+            productName: item.productName || 'Produto Personalizado',
+            printId: item.printId || null,
+            printCode: item.printCode || null,
+            printName: item.printName || null,
+            quantity: item.quantity || 1,
+            unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
+            totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
+            customizationPositions: typeof item.customizationPositions === 'string'
+              ? item.customizationPositions
+              : JSON.stringify(item.customizationPositions || ['Frente']),
+            hasCustomArt: Boolean(item.hasCustomArt),
+            notes: item.notes || null,
+          },
+        });
+
+        if (item.sizes && typeof item.sizes === 'object') {
+          const sizeEntries = Object.entries(item.sizes).filter(([, q]) => Number(q) > 0);
+          if (sizeEntries.length > 0) {
+            await prisma.quoteSize.createMany({
+              data: sizeEntries.map(([size, quantity]) => ({
+                quoteItemId: createdItem.id,
+                size,
+                quantity: Number(quantity),
+              })),
+            });
+          }
         }
       }
     }

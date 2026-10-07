@@ -86,10 +86,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (item.id !== id) return item;
 
         // Scale sizes proportionally if single size or adjust
+        const updatedSizes: { [size: string]: number } = item.sizes ? { ...item.sizes } : {};
+        const sizeKeys = Object.keys(updatedSizes).filter((k) => Number(updatedSizes[k]) > 0);
+        if (sizeKeys.length === 1) {
+          updatedSizes[sizeKeys[0]] = newQty;
+        } else if (sizeKeys.length > 1 && item.quantity > 0) {
+          const ratio = newQty / item.quantity;
+          let currentSum = 0;
+          sizeKeys.forEach((k, idx) => {
+            if (idx === sizeKeys.length - 1) {
+              updatedSizes[k] = Math.max(0, newQty - currentSum);
+            } else {
+              const scaled = Math.round(Number(updatedSizes[k]) * ratio);
+              updatedSizes[k] = scaled;
+              currentSum += scaled;
+            }
+          });
+        }
+
         let unitPrice = item.unitPrice || 0;
         let totalPrice = unitPrice * newQty;
 
-        if (item.pricingTiers) {
+        if (Object.keys(updatedSizes).length > 0) {
+          const detailed = calculateDetailedProductPrice(updatedSizes, item.pricingTiers, item.basePrice);
+          if (detailed.hasPricing) {
+            unitPrice = detailed.averageUnitPrice;
+            totalPrice = detailed.totalPrice;
+          }
+        } else if (item.pricingTiers) {
           const pricing = calculateProductPrice(newQty, item.pricingTiers as any, item.basePrice);
           if (pricing.hasTiers) {
             unitPrice = pricing.unitPrice;
@@ -100,6 +124,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return {
           ...item,
           quantity: newQty,
+          sizes: updatedSizes,
           unitPrice,
           totalPrice,
         };

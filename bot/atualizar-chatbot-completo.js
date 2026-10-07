@@ -161,6 +161,96 @@ function salvarTabelaPrecos(novaTabela) {
   fs.writeFileSync(CAMINHO_TABELA, JSON.stringify(novaTabela, null, 2), "utf-8");
 }
 
+// Sincronizador de Orçamentos com o Banco de Dados do Site / Painel Admin
+async function salvarOrcamentoNoBanco(calculo, clientePhoneRaw) {
+  try {
+    const config = carregarConfigNotificacoes();
+    let cleanPhone = String(clientePhoneRaw || calculo.dados.whatsapp || "").replace(/[^0-9]/g, "");
+    if (cleanPhone.length >= 10 && !cleanPhone.startsWith("55") && cleanPhone.length <= 11) {
+      cleanPhone = "55" + cleanPhone;
+    }
+
+    let localizacao = calculo.dados.localizacao || "";
+    let cidade = "";
+    let estado = "";
+    if (localizacao.includes("-")) {
+      const parts = localizacao.split("-");
+      cidade = parts[0]?.trim() || "";
+      estado = parts[1]?.trim() || "";
+    } else {
+      cidade = localizacao;
+    }
+
+    const payload = {
+      quoteCode: calculo.dados.codigo || ("ORC-" + Date.now()),
+      customerName: calculo.dados.cliente || "Cliente WhatsApp",
+      whatsapp: cleanPhone || "WhatsApp",
+      email: calculo.dados.email || undefined,
+      city: cidade || undefined,
+      state: estado || undefined,
+      desiredDate: calculo.dados.prazoDesejado || undefined,
+      notes: calculo.dados.observacoes || "Orçamento gerado via Chatbot do WhatsApp",
+      estimatedTotal: calculo.totalLiquido || 0,
+      items: calculo.itens.map((it) => {
+        const sizesMap = {};
+        if (it.grade) {
+          const matches = it.grade.matchAll(/([A-Za-z0-9\s]+):\s*([0-9]+)/g);
+          for (const m of matches) {
+            sizesMap[m[1].trim()] = parseInt(m[2], 10);
+          }
+        }
+        if (Object.keys(sizesMap).length === 0) {
+          sizesMap["Padrão"] = it.quantidade || 1;
+        }
+
+        return {
+          productName: it.nomeOficial || it.nome || "Produto Personalizado",
+          quantity: it.quantidade || 1,
+          unitPrice: it.precoUnitarioLiquido || it.precoUnitarioBruto || 0,
+          totalPrice: it.subtotalLiquido || 0,
+          customizationPositions: it.locais ? [it.locais] : ["Frente"],
+          sizes: sizesMap,
+          hasCustomArt: false,
+          notes: it.estampa ? \`Estampa: \${it.estampa}\` : undefined,
+        };
+      }),
+    };
+
+    const targetUrls = [
+      "http://localhost:3000/api/quotes",
+      "https://www.tenorioconfeccoes.shop/api/quotes",
+    ];
+
+    if (config.siteApiUrl) {
+      try {
+        const parsedBase = new URL(config.siteApiUrl);
+        const customQuotesUrl = \`\${parsedBase.origin}/api/quotes\`;
+        if (!targetUrls.includes(customQuotesUrl)) {
+          targetUrls.push(customQuotesUrl);
+        }
+      } catch (e) {}
+    }
+
+    for (const url of targetUrls) {
+      try {
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+          .then((res) => {
+            if (res.ok) {
+              console.log(\`💾 [Banco de Dados] Orçamento \${payload.quoteCode} gravado com sucesso em \${url}\`);
+            }
+          })
+          .catch(() => {});
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.error("⚠️ Erro ao sincronizar orçamento no banco de dados:", err.message);
+  }
+}
+
 // =====================================
 // CONFIGURAÇÃO DO CLIENTE WHATSAPP
 // =====================================
@@ -172,7 +262,9 @@ function criarClienteWhatsApp() {
   qrCodeRaw = null;
 
   client = new Client({
-    authStrategy: new LocalAuth(),
+    authStrategy: new LocalAuth({
+      dataPath: path.join(__dirname, ".wwebjs_auth"),
+    }),
     webVersionCache: {
       type: "remote",
       remotePath: "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/{version}.html",
@@ -187,6 +279,8 @@ function criarClienteWhatsApp() {
         "--no-first-run",
         "--no-zygote",
         "--disable-gpu",
+        "--disable-extensions",
+        "--disable-software-rasterizer",
       ],
     },
   });
@@ -230,7 +324,17 @@ function criarClienteWhatsApp() {
     console.log("⚠️ Desconectado:", reason);
   });
 
-  client.initialize();
+  client.initialize().catch((err) => {
+    console.warn("⚠️ [WhatsApp] Aviso de inicialização do navegador:", err.message);
+    if (err.message && err.message.includes("Execution context was destroyed")) {
+      console.log("🔄 Redirecionamento de página do WhatsApp detectado. Tentando reconectar em 2s...");
+      setTimeout(() => {
+        try {
+          client.initialize().catch(() => {});
+        } catch (e) {}
+      }, 2000);
+    }
+  });
 }
 
 criarClienteWhatsApp();
@@ -310,6 +414,9 @@ client.on("message_create", async (msg) => {
       });
       if (ultimosOrcamentos.length > 20) ultimosOrcamentos.pop();
 
+      // Sincroniza e grava no banco de dados do Painel Admin (/api/quotes)
+      salvarOrcamentoNoBanco(calculo, msg.from);
+
       // Notifica admin sobre novo orçamento
       const valorMoeda = (calculo.totalLiquido || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
       dispararNotificacaoAdmin({
@@ -328,10 +435,15 @@ client.on("message_create", async (msg) => {
     // =====================================
     const estadoUsuario = estadosConversa.get(msg.from);
     if (estadoUsuario && estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO") {
-      if (/^(menu|voltar|cancelar|inicio|início)$/i.test(texto)) {
+      const expirado = estadoUsuario.timestamp && Date.now() - estadoUsuario.timestamp > 15 * 60 * 1000;
+      const ehOpcaoMenu = /^(menu|voltar|cancelar|inicio|início|1|2|3|4|5)$/i.test(texto) ||
+                          texto.includes("atendente") || texto.includes("humano") || texto.includes("vendedor") ||
+                          texto.includes("produto") || texto.includes("catalogo") || texto.includes("catálogo") ||
+                          texto.includes("prazo") || texto.includes("arte") || texto.includes("logo");
+
+      if (expirado || ehOpcaoMenu) {
         estadosConversa.delete(msg.from);
-      } else if (texto === "5" || texto.includes("atendente") || texto.includes("humano") || texto.includes("vendedor")) {
-        estadosConversa.delete(msg.from);
+        // Não retorna aqui se for opção de menu, permitindo que caia diretamente no switch/if da opção desejada
       } else {
         estadosConversa.delete(msg.from);
         console.log(\`📝 [Questionário Respondido] Interpretando dados enviados por \${msg.from}...\`);
@@ -358,6 +470,9 @@ client.on("message_create", async (msg) => {
           data: new Date().toISOString(),
         });
         if (ultimosOrcamentos.length > 20) ultimosOrcamentos.pop();
+
+        // Sincroniza e grava no banco de dados do Painel Admin (/api/quotes)
+        salvarOrcamentoNoBanco(calculo, msg.from);
 
         // Notifica admin sobre novo orçamento
         const valorMoeda = (calculo.totalLiquido || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -435,24 +550,69 @@ client.on("message_create", async (msg) => {
     }
 
     // =====================================
-    // 4. OPÇÃO 2: PRODUTOS E PORTFÓLIO
+    // 4. OPÇÃO 2: PRODUTOS E PORTFÓLIO (LISTAGEM DINÂMICA)
     // =====================================
     if (texto === "2" || texto.includes("produto") || texto.includes("catalogo") || texto.includes("catálogo") || texto.includes("portfolio") || texto.includes("portfólio")) {
-      const msgProdutos =
-        \`👕 *NOSSOS PRODUTOS E LINHAS PERSONALIZADAS:*\\n\\n\` +
-        \`🔹 *Corporativo / Empresas:*\\n\` +
-        \`• Camisas Polo bordadas\\n\` +
-        \`• Camisetas promocionais e uniformes operacionais\\n\` +
-        \`• Camisas sociais e jalecos profissionais\\n\\n\` +
-        \`🔹 *Escolar e Universitário:*\\n\` +
-        \`• Camisetas e regatas escolares\\n\` +
-        \`• Camisas de curso / terceirão / turmas\\n\` +
-        \`• Casacos e Moletons canguru / universitários\\n\\n\` +
-        \`🔹 *Eventos, Igrejas e Esportes:*\\n\` +
-        \`• Camisas Dry-fit para corrida e academias\\n\` +
-        \`• Abadás, regatas e brindes têxteis\\n\\n\` +
-        \`✨ *Trabalhamos com tecidos de alta durabilidade e acabamento premium.*\\n\\n\` +
-        \`Digite *1* para solicitar um orçamento ou *5* para falar com um atendente.\`;
+      let produtosLista = [];
+      try {
+        const tab = carregarTabelaPrecos();
+        if (tab && Array.isArray(tab.produtos)) {
+          produtosLista = tab.produtos;
+        }
+      } catch (e) {
+        console.error("Erro ao carregar tabela de produtos:", e);
+      }
+
+      let msgProdutos = \`👕 *CATÁLOGO DE PRODUTOS PERSONALIZADOS — TENÓRIO CONFECÇÕES*\\n\`;
+      msgProdutos += \`Confira os produtos disponíveis para confecção e personalização:\\n\\n\`;
+
+      if (produtosLista.length === 0) {
+        msgProdutos += \`_Nenhum produto cadastrado no momento._\\n\\n\`;
+      } else {
+        produtosLista.forEach((prod, index) => {
+          const valor = Number(prod.precoBase ?? prod.precoBaseUnitario ?? 0);
+          const precoFormatado = valor > 0 ? valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Sob Consulta';
+          
+          msgProdutos += \`*\${index + 1}. \${prod.nome}*\\n\`;
+          msgProdutos += \`• 🏷️ *A partir de:* \${precoFormatado}\`;
+          if (prod.quantidadeMinima) {
+            msgProdutos += \` _(Mínimo: \${prod.quantidadeMinima} un)_\`;
+          }
+          msgProdutos += \`\\n\`;
+
+          if (prod.prazoConfeccao) {
+            msgProdutos += \`• ⏱️ *Prazo de produção:* \${prod.prazoConfeccao}\\n\`;
+          }
+
+          if (prod.variacoes && prod.variacoes.length > 0) {
+            const resumoVar = prod.variacoes.slice(0, 5).map(v => {
+              const vPreco = Number(v.preco ?? 0);
+              const vPrecoStr = vPreco > 0 ? \` (R$ \${vPreco.toFixed(2).replace('.', ',')})\` : '';
+              return \`\${v.nome || v.termo}\${vPrecoStr}\`;
+            }).join(', ');
+            const maisVar = prod.variacoes.length > 5 ? \` e +\${prod.variacoes.length - 5} opções\` : '';
+            msgProdutos += \`• 📐 *Opções/Variações:* \${resumoVar}\${maisVar}\\n\`;
+          }
+
+          if (prod.gradeTamanhos && prod.gradeTamanhos.length > 0) {
+            msgProdutos += \`• 📏 *Tamanhos:* \${prod.gradeTamanhos.join(', ')}\\n\`;
+          }
+
+          if (prod.observacoes) {
+            msgProdutos += \`• ℹ️ _\${prod.observacoes}_\\n\`;
+          }
+
+          msgProdutos += \`\\n\`;
+        });
+      }
+
+      msgProdutos += \`━━━━━━━━━━━━━━━━━━━━━\\n\`;
+      msgProdutos += \`🌐 *Catálogo completo com fotos no nosso site:*\\nhttps://www.tenorioconfeccoes.shop/produtos\\n\\n\`;
+      msgProdutos += \`✨ *Todos os itens contam com acabamento profissional e personalização de alta durabilidade.*\\n\\n\`;
+      msgProdutos += \`💬 *O que deseja fazer agora?*\\n\`;
+      msgProdutos += \`• Digite *1* para solicitar um orçamento rápido.\\n\`;
+      msgProdutos += \`• Digite *5* para falar com um atendente humano.\\n\`;
+      msgProdutos += \`• Digite *menu* para retornar ao início.\`;
 
       await responder(msgProdutos);
       return;

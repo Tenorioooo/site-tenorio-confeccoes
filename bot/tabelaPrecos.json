@@ -217,8 +217,8 @@
     {
       "min": 11,
       "max": 99999,
-      "percentual": 8,
-      "descricao": "8% de desconto"
+      "percentual": 0,
+      "descricao": "Sem desconto"
     },
     {
       "min": 999999,
