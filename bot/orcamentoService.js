@@ -648,29 +648,158 @@ function gerarRespostaOrcamento(calculo) {
 }
 
 /**
- * Interpreta a resposta enviada pelo cliente ao questionário da Opção 1
+ * Interpreta a resposta enviada pelo cliente ao questionário (tanto de campanhas/anúncios quanto do menu geral)
  */
 function interpretarRespostaQuestionario(textoOriginal, nomeContato) {
   const tabela = carregarTabelaPrecos();
-  const textoLimpo = textoOriginal
+  const textoBruto = (textoOriginal || "").trim();
+  const textoLimpo = textoBruto
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-  // 1. Identifica o Produto
+  // =====================================
+  // 1. EXTRAÇÃO DE RESPOSTAS POR ÍNDICE / LINHA ENUMERADA
+  // =====================================
+  // Mapeia respostas como "1. ...", "1- ...", "1) ...", "1: ...", "1️⃣ ...", etc.
+  const respostasPorIndice = {};
+  const linhas = textoBruto.split(/\r?\n/);
+
+  // Regex para identificar prefixo de questão (1 a 9 ou emojis 1️⃣..9️⃣)
+  const regexPrefixoLinha = /^\s*(?:([1-9])\s*[\.\:\-\)\–\—]\s*|(?:1️⃣|2️⃣|3️⃣|4️⃣|5️⃣|6️⃣|7️⃣|8️⃣|9️⃣)\s*[:\-\.]?\s*)/i;
+
+  let indiceAtual = null;
+  for (const linha of linhas) {
+    const linhaTrim = linha.trim();
+    if (!linhaTrim) continue;
+
+    // Converte emoji para dígito se presente
+    let linhaNorm = linhaTrim
+      .replace(/^1️⃣/i, "1.")
+      .replace(/^2️⃣/i, "2.")
+      .replace(/^3️⃣/i, "3.")
+      .replace(/^4️⃣/i, "4.")
+      .replace(/^5️⃣/i, "5.");
+
+    const matchPrefixo = linhaNorm.match(/^\s*([1-9])\s*[\.\:\-\)\–\—]\s*(.*)$/);
+    if (matchPrefixo) {
+      indiceAtual = parseInt(matchPrefixo[1], 10);
+      respostasPorIndice[indiceAtual] = (matchPrefixo[2] || "").trim();
+    } else if (indiceAtual !== null) {
+      respostasPorIndice[indiceAtual] = (respostasPorIndice[indiceAtual] + " " + linhaTrim).trim();
+    }
+  }
+
+  // Se não foi encontrada enumeração explícita com "1.", mas há múltiplas linhas, mapeia por linha sequencial
+  if (Object.keys(respostasPorIndice).length === 0 && linhas.length >= 2) {
+    let idx = 1;
+    for (const l of linhas) {
+      const lTrim = l.trim();
+      if (lTrim && idx <= 5) {
+        respostasPorIndice[idx] = lTrim;
+        idx++;
+      }
+    }
+  }
+
+  // =====================================
+  // 2. EXTRAÇÃO DE QUANTIDADE (ALTA PRECISÃO)
+  // =====================================
+  let quantidade = null;
+
+  // Função auxiliar para extrair número de um texto específico
+  const extrairNumeroDeTexto = (str) => {
+    if (!str) return null;
+    const s = String(str).replace(/\b100\s*%/g, "").replace(/\b(202[0-9]|2030)\b/g, "");
+    
+    // 1. Procura número acompanhado de unidade/peça/camisa
+    const mUnit = s.match(/(\d+)\s*(?:unidades?|unids?|un|pe[çc]as?|pecas?|pcs?|camisetas?|camisas?|polos?|moletons?|jogos?|conjuntos?|kit[s]?)\b/i);
+    if (mUnit) return parseInt(mUnit[1], 10);
+
+    // 2. Procura números com palavras aproximativas (ex: "umas 30", "cerca de 50", "20 ou 30")
+    const mAprox = s.match(/(?:aproximadamente|aprox|cerca de|mais ou menos|umas?|uns?|total de|volume de)?\s*(\d+)/i);
+    if (mAprox && mAprox[1]) {
+      const num = parseInt(mAprox[1], 10);
+      if (num > 0) return num;
+    }
+
+    // 3. Procura qualquer número puro na string
+    const mPuro = s.match(/\b([1-9]\d{0,4})\b/);
+    if (mPuro) return parseInt(mPuro[1], 10);
+
+    return null;
+  };
+
+  // Prioridade A: Pergunta 2 (Padrão em Fluxos de Anúncios / Ads: "2. Quantas peças você precisa?")
+  if (respostasPorIndice[2]) {
+    const numQ2 = extrairNumeroDeTexto(respostasPorIndice[2]);
+    if (numQ2 !== null && numQ2 > 0) {
+      quantidade = numQ2;
+    }
+  }
+
+  // Prioridade B: Pergunta 3 (Padrão no Menu Geral: "3. Quantidade estimada") se a pergunta 2 não continha quantidade
+  if (quantidade === null && respostasPorIndice[3]) {
+    const numQ3 = extrairNumeroDeTexto(respostasPorIndice[3]);
+    if (numQ3 !== null && numQ3 > 0) {
+      quantidade = numQ3;
+    }
+  }
+
+  // Prioridade C: Expressões explícitas no texto completo ("quantidade: 30", "30 peças", "50 camisas")
+  if (quantidade === null) {
+    const matchQtdRotulo = textoBruto.match(/(?:quantidade|qtd|volume|total)[:\s]*([0-9]+)/i);
+    if (matchQtdRotulo) {
+      quantidade = parseInt(matchQtdRotulo[1], 10);
+    }
+  }
+
+  if (quantidade === null) {
+    const matchQtdUnidade = textoBruto.match(/(\d+)\s*(?:unidades?|unids?|un|pe[çc]as?|pecas?|pcs?|camisetas?|camisas?|polos?|moletons?|jogos?|conjuntos?|kit[s]?)\b/i);
+    if (matchQtdUnidade) {
+      quantidade = parseInt(matchQtdUnidade[1], 10);
+    }
+  }
+
+  // Prioridade D: Se o cliente digitou apenas um número isolado na mensagem
+  if (quantidade === null) {
+    const textoSemConflito = textoBruto
+      .replace(/\b100\s*%/gi, "") // Remove "100%" (ex: 100% algodão)
+      .replace(/\b(202[0-9]|2030)\b/g, "") // Remove anos ("2026", "2025")
+      .replace(/(?:^|\n)\s*[1-9]\s*[\.\:\-\)\–\—]\s*/g, " ") // Remove número de índice da pergunta
+      .replace(/(?:1️⃣|2️⃣|3️⃣|4️⃣|5️⃣|6️⃣|7️⃣|8️⃣|9️⃣)/g, " ");
+
+    const matchRestante = textoSemConflito.match(/\b([1-9]\d{0,3})\b/);
+    if (matchRestante) {
+      quantidade = parseInt(matchRestante[1], 10);
+    }
+  }
+
+  // Fallback padrão se nenhuma quantidade for identificada
+  if (!quantidade || quantidade <= 0) {
+    quantidade = 20;
+  }
+
+  // =====================================
+  // 3. IDENTIFICAÇÃO DO PRODUTO
+  // =====================================
   let produtoEncontrado = null;
-  for (const prod of tabela.produtos) {
-    for (const termo of prod.termos) {
-      const termoLimpo = termo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      if (textoLimpo.includes(termoLimpo)) {
-        produtoEncontrado = prod;
-        break;
+  const textoParaBuscaProduto = (respostasPorIndice[1] ? respostasPorIndice[1] + " " : "") + textoLimpo;
+
+  // Busca na tabela oficial de produtos com match de termos
+  for (const prod of (tabela.produtos || [])) {
+    if (Array.isArray(prod.termos)) {
+      for (const termo of prod.termos) {
+        const termoLimpo = termo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (textoParaBuscaProduto.includes(termoLimpo)) {
+          produtoEncontrado = prod;
+          break;
+        }
       }
     }
     if (produtoEncontrado) break;
   }
 
-  // Se não encontrou termo específico nos termos oficiais, analisa palavras-chave comuns
   let nomeProduto = "Camiseta Personalizada 100% Algodão";
   if (produtoEncontrado) {
     nomeProduto = produtoEncontrado.nome;
@@ -683,6 +812,8 @@ function interpretarRespostaQuestionario(textoOriginal, nomeContato) {
     textoLimpo.includes("time") ||
     textoLimpo.includes("futebol") ||
     textoLimpo.includes("corrida") ||
+    textoLimpo.includes("volei") ||
+    textoLimpo.includes("vôlei") ||
     textoLimpo.includes("atlet")
   ) {
     nomeProduto = "Camiseta Dry-Fit Personalizada";
@@ -700,52 +831,36 @@ function interpretarRespostaQuestionario(textoOriginal, nomeContato) {
     nomeProduto = "Bandeira Personalizada";
   }
 
-  // 2. Identifica Quantidade
-  let quantidade = 20; // Padrão razoável caso não informado
-  // Tenta extrair explicitamente se tiver número da linha 3 (ex: 3. 20, 3: 50 un)
-  const matchLinha3 = textoOriginal.match(/(?:^|\n)\s*3\s*[\.\:\-\)]\s*(\d+)/m);
-  if (matchLinha3) {
-    quantidade = parseInt(matchLinha3[1], 10);
-  } else {
-    // Tenta encontrar "X peças", "X unidades", "X camisas" etc.
-    const matchQtdTexto = textoOriginal.match(
-      /(\d+)\s*(?:unidades?|unids?|un|pe[çc]as?|pcs?|camisetas?|camisas?|polos?|moletons?|jalecos?|bon[ée]s?)/i
-    );
-    if (matchQtdTexto) {
-      quantidade = parseInt(matchQtdTexto[1], 10);
-    } else {
-      // Procura por qualquer número isolado entre 1 e 9999
-      const matchQualquerNumero = textoOriginal.match(/\b([1-9]\d{0,3})\b/);
-      if (matchQualquerNumero) {
-        quantidade = parseInt(matchQualquerNumero[1], 10);
-      }
-    }
-  }
-
-  // 3. Segmento (Escolar, Corporativo, Evento, etc.)
+  // =====================================
+  // 4. SEGMENTO (ESCOLAR, CORPORATIVO, EVENTO, INTERCLASSE, ETC.)
+  // =====================================
   let segmento = "";
-  const matchLinha2 = textoOriginal.match(/(?:^|\n)\s*2\s*[\.\:\-\)]\s*([^\n\r]+)/m);
-  if (matchLinha2) {
-    segmento = matchLinha2[1].replace(/[*_~]/g, "").trim();
-  } else {
-    if (textoLimpo.includes("escolar") || textoLimpo.includes("escola") || textoLimpo.includes("colegio")) segmento = "Escolar";
-    else if (textoLimpo.includes("interclasse")) segmento = "Interclasse Escolar";
-    else if (textoLimpo.includes("terceirao") || textoLimpo.includes("terceirão")) segmento = "Terceirão / Formatura";
-    else if (textoLimpo.includes("faculdade") || textoLimpo.includes("universit")) segmento = "Universitário";
-    else if (textoLimpo.includes("empresa") || textoLimpo.includes("corporativo")) segmento = "Corporativo / Empresarial";
-    else if (textoLimpo.includes("evento")) segmento = "Evento";
-    else if (textoLimpo.includes("igreja") || textoLimpo.includes("retiro")) segmento = "Igreja / Religioso";
-    else if (textoLimpo.includes("esport") || textoLimpo.includes("corrida") || textoLimpo.includes("academia")) segmento = "Esportivo";
+  // Em fluxos de anúncio: pergunta 3 é time/evento. No menu: pergunta 2 é segmento.
+  const respSeg = respostasPorIndice[3] || respostasPorIndice[2] || "";
+  if (respSeg && !/^\d+$/.test(respSeg.trim())) {
+    segmento = respSeg.replace(/[*_~]/g, "").trim();
   }
 
-  // 4. Personalização / Locais de estampa
+  if (!segmento) {
+    if (textoLimpo.includes("interclasse")) segmento = "Interclasse Escolar";
+    else if (textoLimpo.includes("terceirao") || textoLimpo.includes("terceirão")) segmento = "Terceirão / Formatura";
+    else if (textoLimpo.includes("escolar") || textoLimpo.includes("escola") || textoLimpo.includes("colegio")) segmento = "Escolar";
+    else if (textoLimpo.includes("faculdade") || textoLimpo.includes("universit")) segmento = "Universitário";
+    else if (textoLimpo.includes("empresa") || textoLimpo.includes("corporativo") || textoLimpo.includes("firma")) segmento = "Corporativo / Empresarial";
+    else if (textoLimpo.includes("igreja") || textoLimpo.includes("retiro") || textoLimpo.includes("culto")) segmento = "Igreja / Religioso";
+    else if (textoLimpo.includes("futebol") || textoLimpo.includes("volei") || textoLimpo.includes("time") || textoLimpo.includes("esport") || textoLimpo.includes("corrida")) segmento = "Time Esportivo";
+    else if (textoLimpo.includes("evento")) segmento = "Evento";
+  }
+
+  // =====================================
+  // 5. ESTAMPA / PERSONALIZAÇÃO
+  // =====================================
   let estampa = "Silk Screen / Personalização Têxtil";
-  const matchLinha4 = textoOriginal.match(/(?:^|\n)\s*4\s*[\.\:\-\)]\s*([^\n\r]+)/m);
-  if (matchLinha4) {
-    estampa = matchLinha4[1].replace(/[*_~]/g, "").trim();
+  if (respostasPorIndice[4] && (respostasPorIndice[4].toLowerCase().includes("silk") || respostasPorIndice[4].toLowerCase().includes("bordad") || respostasPorIndice[4].toLowerCase().includes("sublim"))) {
+    estampa = respostasPorIndice[4].replace(/[*_~]/g, "").trim();
   } else {
     if (textoLimpo.includes("bordado")) estampa = "Bordado Computadorizado";
-    else if (textoLimpo.includes("sublimacao") || textoLimpo.includes("sublimação")) estampa = "Sublimação Total";
+    else if (textoLimpo.includes("sublimacao") || textoLimpo.includes("sublimação") || textoLimpo.includes("total")) estampa = "Sublimação Total";
     else if (textoLimpo.includes("dtf")) estampa = "Estampa DTF";
     else if (textoLimpo.includes("silk")) estampa = "Silk Screen";
   }
@@ -766,31 +881,29 @@ function interpretarRespostaQuestionario(textoOriginal, nomeContato) {
     locais = "Manga";
   }
 
-  // 5. Logo / Arte ou Personalização Individual
+  // =====================================
+  // 6. LOGO / ARTE E NOME/NÚMERO INDIVIDUAL
+  // =====================================
   let temArte = "A confirmar";
-  const matchLinha5 = textoOriginal.match(/(?:^|\n)\s*5\s*[\.\:\-\)]\s*([^\n\r]+)/m);
-  if (matchLinha5) {
-    const respLinha5 = matchLinha5[1].replace(/[*_~]/g, "").trim();
-    if (/^(sim|s|quero|vai ter|com certeza|positivo)/i.test(respLinha5)) {
-      temArte = "Com Nome e Número Individual";
-    } else if (/^(não|nao|n|sem)/i.test(respLinha5)) {
-      temArte = "Sem Nome/Número Individual";
-    } else {
-      temArte = respLinha5;
-    }
-  } else {
-    if (textoLimpo.includes("nome e numero") || textoLimpo.includes("nome e número") || textoLimpo.includes("nome individual")) {
-      temArte = "Com Nome e Número Individual";
-    } else if (textoLimpo.includes("sim") || textoLimpo.includes("tenho") || textoLimpo.includes("ja tenho")) {
-      temArte = "Cliente já possui a arte";
-    } else if (textoLimpo.includes("nao") || textoLimpo.includes("não") || textoLimpo.includes("criar")) {
-      temArte = "Necessário criar layout";
-    }
+  let temNomeNumero = false;
+
+  // Analisa resposta da Pergunta 5 (Nome e número individual) ou 4 (Logo/Arte)
+  const resp5 = respostasPorIndice[5] ? respostasPorIndice[5].toLowerCase() : "";
+  const resp4 = respostasPorIndice[4] ? respostasPorIndice[4].toLowerCase() : "";
+
+  if (/^(sim|s|quero|vai ter|com certeza|positivo|preciso)/i.test(resp5) || textoLimpo.includes("com nome") || textoLimpo.includes("nome e numero") || textoLimpo.includes("nome e número")) {
+    temNomeNumero = true;
+  }
+
+  if (/^(sim|s|tenho|ja tenho|já tenho|vou mandar|mandei)/i.test(resp4) || textoLimpo.includes("tenho a logo") || textoLimpo.includes("tenho a arte") || textoLimpo.includes("tenho o logo")) {
+    temArte = "Cliente já possui a arte/logotipo";
+  } else if (/^(não|nao|n|sem|criar)/i.test(resp4) || textoLimpo.includes("nao tenho") || textoLimpo.includes("não tenho") || textoLimpo.includes("criar arte")) {
+    temArte = "Necessário criar layout";
   }
 
   // Grade de tamanhos se mencionada
   let grade = "A definir na confirmação do pedido";
-  const matchGrade = textoOriginal.match(/(?:grade|tamanhos?)[:\s]*([^\n\r]+)/i);
+  const matchGrade = textoBruto.match(/(?:grade|tamanhos?)[:\s]*([^\n\r]+)/i);
   if (matchGrade) {
     grade = matchGrade[1].replace(/[*_~]/g, "").trim();
   }
@@ -798,7 +911,8 @@ function interpretarRespostaQuestionario(textoOriginal, nomeContato) {
   // Observações
   let obs = [];
   if (segmento) obs.push(`Segmento: ${segmento}`);
-  if (temArte && temArte !== "A confirmar") obs.push(`Personalização: ${temArte}`);
+  if (temNomeNumero) obs.push(`Com Nome e Número Individual`);
+  if (temArte && temArte !== "A confirmar") obs.push(`Arte: ${temArte}`);
   const observacoes = obs.length > 0 ? obs.join(" | ") : "Solicitação respondida via WhatsApp";
 
   // Gera código único

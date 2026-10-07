@@ -5,7 +5,7 @@
   "notificarPushWeb": true,
   "fluxoAnuncio": {
     "ativo": true,
-    "tituloCampanha": "Camisetas Esportivas / Interclasse",
+    "tituloCampanha": "Campanha Meta Ads - Camisetas Esportivas / Interclasse",
     "gatilhos": [
       "vi o anuncio",
       "vi o anúncio",
@@ -22,6 +22,7 @@
       "dry fit",
       "dryfit",
       "esportivo",
+      "esportiva",
       "camisa de time"
     ],
     "mensagem": "👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._"
@@ -57,7 +58,7 @@
     {
       "id": "fluxo-empresas",
       "nome": "Campanha Corporativa - Uniformes para Empresas",
-      "ativo": true,
+      "ativo": false,
       "tipoAcao": "QUESTIONARIO_ORCAMENTO",
       "gatilhos": [
         "uniforme para empresa",
