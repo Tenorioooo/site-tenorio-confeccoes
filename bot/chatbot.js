@@ -38,10 +38,43 @@ const clientesAguardandoHumano = [];
 // =====================================
 const CAMINHO_CONFIG_NOTIFICACOES = path.join(__dirname, "configNotificacoes.json");
 
+function getPadraoFluxoAnuncio() {
+  return {
+    ativo: true,
+    tituloCampanha: "Camisetas Esportivas / Interclasse",
+    gatilhos: [
+      "vi o anuncio",
+      "vi o anúncio",
+      "vim pelo anuncio",
+      "vim pelo anúncio",
+      "anuncio do facebook",
+      "anúncio do facebook",
+      "anuncio do instagram",
+      "anúncio do instagram",
+      "anúncio",
+      "anuncio",
+      "interclasse",
+      "dry-fit",
+      "dry fit",
+      "dryfit",
+      "esportivo",
+      "esportiva",
+      "uniforme esportivo",
+      "camisa de time",
+      "torcida"
+    ],
+    mensagem: `👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._`
+  };
+}
+
 function carregarConfigNotificacoes() {
   try {
     if (fs.existsSync(CAMINHO_CONFIG_NOTIFICACOES)) {
-      return JSON.parse(fs.readFileSync(CAMINHO_CONFIG_NOTIFICACOES, "utf-8"));
+      const config = JSON.parse(fs.readFileSync(CAMINHO_CONFIG_NOTIFICACOES, "utf-8"));
+      if (!config.fluxoAnuncio) {
+        config.fluxoAnuncio = getPadraoFluxoAnuncio();
+      }
+      return config;
     }
   } catch (e) {}
   return {
@@ -50,6 +83,7 @@ function carregarConfigNotificacoes() {
     notificarNovoOrcamento: true,
     notificarPushWeb: true,
     siteApiUrl: "https://www.tenorioconfeccoes.shop/api/notifications/send",
+    fluxoAnuncio: getPadraoFluxoAnuncio(),
   };
 }
 
@@ -502,26 +536,20 @@ client.on("message_create", async (msg) => {
     // =====================================
     // 1. RECONHECIMENTO DE MENSAGENS DE ANÚNCIO (FACEBOOK / INSTAGRAM ADS)
     // =====================================
-    const veioDeAnuncio =
-      texto.includes("vi o anuncio") ||
-      texto.includes("vi o anúncio") ||
-      texto.includes("vim pelo anuncio") ||
-      texto.includes("vim pelo anúncio") ||
-      texto.includes("anuncio do facebook") ||
-      texto.includes("anúncio do facebook") ||
-      texto.includes("anuncio do instagram") ||
-      texto.includes("anúncio do instagram") ||
-      texto.includes("anúncio") ||
-      texto.includes("anuncio") ||
-      texto.includes("interclasse") ||
-      texto.includes("dry-fit") ||
-      texto.includes("dry fit") ||
-      texto.includes("dryfit") ||
-      texto.includes("esportivo") ||
-      texto.includes("esportiva") ||
-      texto.includes("uniforme esportivo") ||
-      texto.includes("camisa de time") ||
-      texto.includes("torcida");
+    const configNotifAtual = carregarConfigNotificacoes();
+    const fluxoAnuncio = configNotifAtual.fluxoAnuncio || getPadraoFluxoAnuncio();
+
+    let veioDeAnuncio = false;
+    if (fluxoAnuncio.ativo !== false) {
+      const gatilhosConfig = Array.isArray(fluxoAnuncio.gatilhos) && fluxoAnuncio.gatilhos.length > 0
+        ? fluxoAnuncio.gatilhos
+        : getPadraoFluxoAnuncio().gatilhos;
+
+      veioDeAnuncio = gatilhosConfig.some((gatilho) => {
+        const gLimpo = String(gatilho || "").toLowerCase().trim();
+        return gLimpo && texto.includes(gLimpo);
+      });
+    }
 
     if (veioDeAnuncio) {
       estadosConversa.set(msg.from, { etapa: "AGUARDANDO_DADOS_ORCAMENTO_ANUNCIO", timestamp: Date.now() });
@@ -531,17 +559,8 @@ client.on("message_create", async (msg) => {
       else if (hora >= 12 && hora < 18) saudacao = "Boa tarde";
       else saudacao = "Boa noite";
 
-      const msgAnuncio =
-        `👋 *${saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\n` +
-        `Bora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n` +
-        `📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n` +
-        `1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n` +
-        `2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n` +
-        `3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n` +
-        `4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n` +
-        `5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n` +
-        `✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n` +
-        `_Se preferir ver outras opções, digite *menu* a qualquer momento._`;
+      let templateMensagem = fluxoAnuncio.mensagem || getPadraoFluxoAnuncio().mensagem;
+      let msgAnuncio = templateMensagem.replace(/{saudacao}/gi, saudacao);
 
       await responder(msgAnuncio);
       return;
@@ -826,6 +845,28 @@ app.post("/api/config/notificacoes/test", async (req, res) => {
       dados: { clientePhone: config.adminPhone || "5581999999999", nome: "Administrador" },
     });
     res.json({ success: true, message: "Teste de notificação disparado com sucesso!" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 1.4 Obter e Salvar Fluxo de Anúncios Personalizado
+app.get("/api/config/fluxo-anuncio", (req, res) => {
+  try {
+    const config = carregarConfigNotificacoes();
+    res.json({ success: true, fluxoAnuncio: config.fluxoAnuncio || getPadraoFluxoAnuncio() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/config/fluxo-anuncio", (req, res) => {
+  try {
+    const config = carregarConfigNotificacoes();
+    config.fluxoAnuncio = req.body;
+    salvarConfigNotificacoes(config);
+    console.log("💾 [Configurações] Fluxo de anúncios atualizado via painel admin!");
+    res.json({ success: true, message: "Fluxo de anúncio salvo com sucesso!", fluxoAnuncio: config.fluxoAnuncio });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

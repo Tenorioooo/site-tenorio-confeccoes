@@ -26,7 +26,10 @@ import {
   Send,
   Check,
   ShieldAlert,
-  HelpCircle
+  HelpCircle,
+  Megaphone,
+  Sparkles,
+  Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,6 +37,13 @@ interface PricingTierItem {
   minQty: number;
   maxQty?: number | null;
   unitPrice: number;
+}
+
+interface FluxoAnuncioConfig {
+  ativo: boolean;
+  tituloCampanha: string;
+  gatilhos: string[];
+  mensagem: string;
 }
 
 interface ProdutoTabela {
@@ -94,11 +104,12 @@ interface StatusResponse {
     notificarNovoOrcamento: boolean;
     notificarPushWeb: boolean;
     siteApiUrl: string;
+    fluxoAnuncio?: FluxoAnuncioConfig;
   };
 }
 
 export default function ChatbotAdminTab() {
-  const [activeTab, setActiveTab] = useState<'status' | 'produtos' | 'humano' | 'notificacoes'>('status');
+  const [activeTab, setActiveTab] = useState<'status' | 'anuncio' | 'produtos' | 'humano' | 'notificacoes'>('status');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [data, setData] = useState<StatusResponse | null>(null);
@@ -116,6 +127,36 @@ export default function ChatbotAdminTab() {
   const [notifPush, setNotifPush] = useState(true);
   const [pushStatus, setPushStatus] = useState<'default' | 'granted' | 'denied' | 'unsupported'>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
+
+  // Configurações do Fluxo de Anúncios (ADS)
+  const [fluxoAnuncio, setFluxoAnuncio] = useState<FluxoAnuncioConfig>({
+    ativo: true,
+    tituloCampanha: 'Camisetas Esportivas / Interclasse',
+    gatilhos: [
+      'vi o anuncio',
+      'vi o anúncio',
+      'vim pelo anuncio',
+      'vim pelo anúncio',
+      'anuncio do facebook',
+      'anúncio do facebook',
+      'anuncio do instagram',
+      'anúncio do instagram',
+      'anúncio',
+      'anuncio',
+      'interclasse',
+      'dry-fit',
+      'dry fit',
+      'dryfit',
+      'esportivo',
+      'esportiva',
+      'uniforme esportivo',
+      'camisa de time',
+      'torcida'
+    ],
+    mensagem: `👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._`
+  });
+  const [gatilhosInput, setGatilhosInput] = useState('');
+  const [novoGatilhoTexto, setNovoGatilhoTexto] = useState('');
 
   // Estados de edição de produto
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -167,6 +208,20 @@ export default function ChatbotAdminTab() {
     } catch (e) {}
   }, [botUrl]);
 
+  // Carregar configurações do fluxo de anúncios do robô
+  const carregarFluxoAnuncio = useCallback(async () => {
+    try {
+      const res = await fetch(`${botUrl}/api/config/fluxo-anuncio`, { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.fluxoAnuncio) {
+          setFluxoAnuncio(json.fluxoAnuncio);
+          setGatilhosInput((json.fluxoAnuncio.gatilhos || []).join(', '));
+        }
+      }
+    } catch (e) {}
+  }, [botUrl]);
+
   // Carregar configurações de notificação do site (apenas uma vez no carregamento inicial)
   const carregarConfiguracoes = useCallback(async () => {
     if (configLoadedRef.current) return;
@@ -182,6 +237,10 @@ export default function ChatbotAdminTab() {
           setNotifHumano(cfg.notificarAtendimentoHumano !== false);
           setNotifOrcamento(cfg.notificarNovoOrcamento !== false);
           setNotifPush(cfg.notificarPushWeb !== false);
+          if (cfg.fluxoAnuncio) {
+            setFluxoAnuncio(cfg.fluxoAnuncio);
+            setGatilhosInput((cfg.fluxoAnuncio.gatilhos || []).join(', '));
+          }
         } else if (data.chatbot_admin_phone) {
           setAdminPhone(data.chatbot_admin_phone);
         }
@@ -209,10 +268,149 @@ export default function ChatbotAdminTab() {
   useEffect(() => {
     carregarStatus();
     carregarTabela();
+    carregarFluxoAnuncio();
     carregarConfiguracoes();
     const interval = setInterval(carregarStatus, 4000);
     return () => clearInterval(interval);
-  }, [carregarStatus, carregarTabela, carregarConfiguracoes]);
+  }, [carregarStatus, carregarTabela, carregarFluxoAnuncio, carregarConfiguracoes]);
+
+  // Salvar Fluxo de Anúncios no Robô
+  const salvarFluxoAnuncio = async () => {
+    try {
+      setActionLoading(true);
+      const gatilhosArray = gatilhosInput
+        .split(',')
+        .map((g) => g.trim().toLowerCase())
+        .filter(Boolean);
+
+      const payload: FluxoAnuncioConfig = {
+        ...fluxoAnuncio,
+        gatilhos: gatilhosArray.length > 0 ? gatilhosArray : fluxoAnuncio.gatilhos
+      };
+
+      const res = await fetch(`${botUrl}/api/config/fluxo-anuncio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        toast.success('Fluxo de anúncio atualizado com sucesso no robô!');
+        setFluxoAnuncio(payload);
+      } else {
+        toast.error('Erro ao salvar fluxo no robô.');
+      }
+    } catch (e) {
+      toast.error('Erro ao conectar com o robô.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Adicionar e remover gatilhos de forma interativa
+  const adicionarGatilho = (novo?: string) => {
+    const limpo = (novo !== undefined ? novo : novoGatilhoTexto).trim().toLowerCase();
+    if (!limpo) return;
+    if (fluxoAnuncio.gatilhos.includes(limpo)) {
+      toast.warning('Este gatilho já está na lista.');
+      return;
+    }
+    const novosGatilhos = [...fluxoAnuncio.gatilhos, limpo];
+    setFluxoAnuncio({ ...fluxoAnuncio, gatilhos: novosGatilhos });
+    setGatilhosInput(novosGatilhos.join(', '));
+    setNovoGatilhoTexto('');
+    toast.success(`Gatilho "${limpo}" adicionado!`);
+  };
+
+  const removerGatilho = (gatilhoRemover: string) => {
+    const novosGatilhos = fluxoAnuncio.gatilhos.filter((g) => g !== gatilhoRemover);
+    setFluxoAnuncio({ ...fluxoAnuncio, gatilhos: novosGatilhos });
+    setGatilhosInput(novosGatilhos.join(', '));
+  };
+
+  // Aplicar modelo pré-configurado
+  const aplicarTemplateAnuncio = (tipo: 'esportivo' | 'algodao' | 'corporativo' | 'terceirao') => {
+    if (tipo === 'esportivo') {
+      const template: FluxoAnuncioConfig = {
+        ativo: true,
+        tituloCampanha: 'Camisetas Esportivas / Interclasse',
+        gatilhos: [
+          'vi o anuncio',
+          'vi o anúncio',
+          'vim pelo anuncio',
+          'vim pelo anúncio',
+          'anuncio do facebook',
+          'anúncio do facebook',
+          'anuncio do instagram',
+          'anúncio do instagram',
+          'anúncio',
+          'anuncio',
+          'interclasse',
+          'dry-fit',
+          'dry fit',
+          'dryfit',
+          'esportivo',
+          'esportiva',
+          'uniforme esportivo',
+          'camisa de time',
+          'torcida'
+        ],
+        mensagem: `👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._`
+      };
+      setFluxoAnuncio(template);
+      setGatilhosInput(template.gatilhos.join(', '));
+      toast.success('Modelo de Camisetas Esportivas aplicado!');
+    } else if (tipo === 'algodao') {
+      const template: FluxoAnuncioConfig = {
+        ativo: true,
+        tituloCampanha: 'Camisetas 100% Algodão Premium',
+        gatilhos: [
+          'vi o anuncio de camiseta',
+          'anuncio camiseta algodao',
+          'anuncio algodao',
+          'promoção camiseta',
+          'promocao camiseta',
+          'camiseta personalizada algodao'
+        ],
+        mensagem: `👋 *{saudacao}! Seja muito bem-vindo(a) à Tenório Confecções!* 🧵✨\n\nVi que você tem interesse nas nossas *Camisetas 100% Algodão Premium*!\n\n📋 *Para eu montar seu orçamento com as melhores condições, me conta:* \n\n1️⃣ *Quantas camisetas você precisa aproximadamente?* (Ex: 10, 20, 50, 100+ un)\n2️⃣ *Qual a cor principal desejada?* (Ex: Branca, Preta, Colorida)\n3️⃣ *Para qual finalidade?* (Ex: Evento, Marca própria, Empresa, Presente)\n4️⃣ *Já possui a estampa/arte pronta?* (Sim / Não / Pode enviar aqui)\n5️⃣ *Qual o prazo que precisa das peças?*\n\n✍️ *Envie suas respostas aqui em uma única mensagem* que já calculamos o seu valor! 🚀`
+      };
+      setFluxoAnuncio(template);
+      setGatilhosInput(template.gatilhos.join(', '));
+      toast.success('Modelo de Camisetas de Algodão aplicado!');
+    } else if (tipo === 'corporativo') {
+      const template: FluxoAnuncioConfig = {
+        ativo: true,
+        tituloCampanha: 'Uniformes Corporativos & Polos',
+        gatilhos: [
+          'anuncio uniforme empresa',
+          'anuncio camisa polo',
+          'anuncio corporativo',
+          'uniforme empresarial',
+          'polo bordada'
+        ],
+        mensagem: `👋 *{saudacao}! Seja bem-vindo(a) à Tenório Confecções!* 👔💼\n\nEspecialistas em *Uniformes Corporativos de Alta Durabilidade* (Polos Piquet, Camisas Sociais, Moletons e Jalecos com Bordado Computadorizado).\n\n📋 *Para montarmos a proposta comercial para sua empresa:* \n\n1️⃣ *Qual modelo de uniforme?* (Ex: Camisa Polo Piquet, Camiseta Algodão, Colete)\n2️⃣ *Qual a quantidade estimada?* (Ex: 15, 30, 60 peças)\n3️⃣ *Nome da sua empresa / cidade:*\n4️⃣ *Deseja logotipo bordado ou estampado?* (Bordado / Silk / DTF)\n5️⃣ *Qual o prazo desejado para entrega?*\n\n✍️ *Envie essas informações* para enviarmos sua cotação formalizada! 🚀`
+      };
+      setFluxoAnuncio(template);
+      setGatilhosInput(template.gatilhos.join(', '));
+      toast.success('Modelo Corporativo aplicado!');
+    } else if (tipo === 'terceirao') {
+      const template: FluxoAnuncioConfig = {
+        ativo: true,
+        tituloCampanha: 'Terceirão & Formaturas',
+        gatilhos: [
+          'anuncio terceirao',
+          'anúncio terceirão',
+          'camisa terceirao',
+          'moletom terceirao',
+          'interclasse formatura'
+        ],
+        mensagem: `👋 *{saudacao}! Fala terceirão, tudo bem?* 🎓✨🏆\n\nBora fazer o manto da formatura / terceirão mais pesado da escola!\n\n📋 *Para eu calcular os valores com desconto de turma, me responde rapidinho:* \n\n1️⃣ *Qual peça a turma quer fazer?* (Ex: Camiseta 100% Algodão, Moletom Canguru com Capuz, Corta-Vento)\n2️⃣ *Quantos alunos na turma aproximadamente?* (Ex: 25, 40, 60 pessoas)\n3️⃣ *Nome da escola / cidade:*\n4️⃣ *Já têm o desenho/tema ou querem que a gente crie o layout virtual?*\n5️⃣ *Vai ter nome e número de cada formando?* (Sim / Não)\n\n✍️ *Manda aqui em uma única mensagem* que já calculamos a cotação por aluno! 🚀`
+      };
+      setFluxoAnuncio(template);
+      setGatilhosInput(template.gatilhos.join(', '));
+      toast.success('Modelo de Terceirão aplicado!');
+    }
+  };
 
   // Função auxiliar para conversão de chave VAPID no padrão iOS/Safari
   const urlBase64ToUint8Array = (base64String: string) => {
@@ -679,6 +877,21 @@ export default function ChatbotAdminTab() {
           </button>
 
           <button
+            onClick={() => setActiveTab('anuncio')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              activeTab === 'anuncio'
+                ? 'bg-pink-600 text-white shadow-lg shadow-pink-600/20'
+                : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <Megaphone className="h-4 w-4 text-pink-300" />
+            Fluxo Anúncios (ADS)
+            {fluxoAnuncio.ativo && (
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            )}
+          </button>
+
+          <button
             onClick={() => setActiveTab('humano')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all relative ${
               activeTab === 'humano'
@@ -871,6 +1084,365 @@ export default function ChatbotAdminTab() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ABA: FLUXO DE ANÚNCIOS (ADS / FACEBOOK / INSTAGRAM) */}
+      {activeTab === 'anuncio' && (
+        <div className="space-y-6">
+          {/* HEADER DA CAMPANHA & STATUS */}
+          <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-sm space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400 shadow-lg shadow-pink-500/10">
+                  <Megaphone className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                    Fluxo de Entrada para Anúncios (ADS)
+                    {fluxoAnuncio.ativo ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Ativo
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                        Desativado
+                      </span>
+                    )}
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Configure as mensagens automáticas e perguntas de qualificação quando o cliente vier de campanhas do Facebook, Instagram ou WhatsApp.
+                  </p>
+                </div>
+              </div>
+
+              {/* TOGGLE STATUS & SALVAR */}
+              <div className="flex items-center gap-3">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={fluxoAnuncio.ativo}
+                    onChange={(e) => setFluxoAnuncio({ ...fluxoAnuncio, ativo: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div>
+                  <span className="ml-3 text-xs font-medium text-slate-300">
+                    {fluxoAnuncio.ativo ? 'Fluxo Habilitado' : 'Fluxo Desabilitado'}
+                  </span>
+                </label>
+
+                <button
+                  onClick={salvarFluxoAnuncio}
+                  disabled={actionLoading}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-pink-600 hover:bg-pink-500 text-white flex items-center gap-2 shadow-lg shadow-pink-600/25 transition disabled:opacity-50"
+                >
+                  {actionLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Salvar Fluxo
+                </button>
+              </div>
+            </div>
+
+            {/* MODELOS RÁPIDOS / TEMPLATES */}
+            <div className="pt-2 border-t border-slate-800/80">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-3">
+                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                Carregar Modelo Pré-Configurado (1 Clique)
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <button
+                  type="button"
+                  onClick={() => aplicarTemplateAnuncio('esportivo')}
+                  className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group"
+                >
+                  <p className="text-sm font-semibold text-slate-200 group-hover:text-pink-400 flex items-center gap-2">
+                    ⚽ Esportivo / Interclasse
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Dry-Fit, fardamentos, numeração individual e eventos esportivos.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => aplicarTemplateAnuncio('algodao')}
+                  className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group"
+                >
+                  <p className="text-sm font-semibold text-slate-200 group-hover:text-pink-400 flex items-center gap-2">
+                    👕 100% Algodão Premium
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Camisetas personalizadas, marcas próprias e eventos.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => aplicarTemplateAnuncio('corporativo')}
+                  className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group"
+                >
+                  <p className="text-sm font-semibold text-slate-200 group-hover:text-pink-400 flex items-center gap-2">
+                    👔 Corporativo & Polos
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Polos bordadas, uniformes de empresas e atendimento B2B.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => aplicarTemplateAnuncio('terceirao')}
+                  className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group"
+                >
+                  <p className="text-sm font-semibold text-slate-200 group-hover:text-pink-400 flex items-center gap-2">
+                    🎓 Terceirão & Turmas
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Moletons, camisetas de formatura e interclasses escolares.
+                  </p>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* PALAVRAS-CHAVE GATILHOS */}
+          <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-sm space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                <Send className="h-4 w-4 text-blue-400" />
+                Gatilhos de Ativação Automática (Palavras e Frases)
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Se a primeira mensagem do cliente contiver qualquer uma dessas palavras, o robô ativará este fluxo personalizado automaticamente.
+              </p>
+            </div>
+
+            {/* TAGS ATUAIS */}
+            <div className="flex flex-wrap gap-2 p-3 bg-slate-950/70 border border-slate-800 rounded-xl min-h-[52px] items-center">
+              {fluxoAnuncio.gatilhos.length === 0 ? (
+                <span className="text-xs text-slate-500 italic">Nenhum gatilho cadastrado. Adicione abaixo.</span>
+              ) : (
+                fluxoAnuncio.gatilhos.map((gatilho, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20 group hover:border-rose-500/40"
+                  >
+                    {gatilho}
+                    <button
+                      type="button"
+                      onClick={() => removerGatilho(gatilho)}
+                      className="text-slate-400 hover:text-rose-400 transition"
+                      title="Remover gatilho"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))
+              )}
+            </div>
+
+            {/* ADICIONAR NOVO GATILHO */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={novoGatilhoTexto}
+                onChange={(e) => setNovoGatilhoTexto(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    adicionarGatilho();
+                  }
+                }}
+                placeholder="Ex: vi no insta, vi o anúncio, quero fazer camisa de time..."
+                className="flex-1 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-pink-500"
+              />
+              <button
+                type="button"
+                onClick={() => adicionarGatilho()}
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-1.5 transition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Adicionar Gatilho
+              </button>
+            </div>
+          </div>
+
+          {/* GRID: EDITOR DE MENSAGEM & PREVIEW DO WHATSAPP */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* COLUNA ESQUERDA: EDITOR */}
+            <div className="lg:col-span-7 bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <Edit2 className="h-4 w-4 text-pink-400" />
+                    Editor da Mensagem do Robô
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Personalize o texto, emojis e as perguntas enviadas para o cliente.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFluxoAnuncio({
+                      ...fluxoAnuncio,
+                      mensagem: fluxoAnuncio.mensagem + ' {saudacao}'
+                    });
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1 transition"
+                  title="Inserir variável de saudação dinâmica (Bom dia / Boa tarde / Boa noite)"
+                >
+                  <Plus className="h-3 w-3" />
+                  + {'{saudacao}'}
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                  Nome / Título da Campanha:
+                </label>
+                <input
+                  type="text"
+                  value={fluxoAnuncio.tituloCampanha}
+                  onChange={(e) => setFluxoAnuncio({ ...fluxoAnuncio, tituloCampanha: e.target.value })}
+                  placeholder="Ex: Campanha Interclasse Facebook ADS"
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-pink-500 mb-4"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                  Texto da Mensagem Inicial (WhatsApp Formatação):
+                </label>
+                <textarea
+                  rows={14}
+                  value={fluxoAnuncio.mensagem}
+                  onChange={(e) => setFluxoAnuncio({ ...fluxoAnuncio, mensagem: e.target.value })}
+                  placeholder="Digite a mensagem que o robô responderá..."
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 font-mono focus:outline-none focus:border-pink-500 leading-relaxed"
+                />
+              </div>
+
+              <div className="p-4 rounded-xl bg-blue-950/30 border border-blue-900/40 text-xs text-blue-300 space-y-1.5">
+                <p className="font-semibold flex items-center gap-1.5 text-blue-200">
+                  <HelpCircle className="h-4 w-4 text-blue-400" />
+                  Dicas de Inteligência do Robô:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-slate-300">
+                  <li>Use <code className="text-pink-300 font-mono bg-slate-900 px-1 py-0.5 rounded">{'{saudacao}'}</code> para o bot saudar automaticamente com <i>Bom dia</i>, <i>Boa tarde</i> ou <i>Boa noite</i>.</li>
+                  <li>Use <code className="text-pink-300 font-mono bg-slate-900 px-1 py-0.5 rounded">*texto*</code> para <b>negrito</b> e <code className="text-pink-300 font-mono bg-slate-900 px-1 py-0.5 rounded">_texto_</code> para <i>itálico</i>.</li>
+                  <li>O robô lê a quantidade (ex: 20 peças) e aplica automaticamente o desconto progressivo da tabela de preços!</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* COLUNA DIREITA: SIMULADOR WHATSAPP EM TEMPO REAL */}
+            <div className="lg:col-span-5 flex flex-col">
+              <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-sm flex-1 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <Smartphone className="h-4 w-4 text-emerald-400" />
+                    Pré-visualização no WhatsApp
+                  </h3>
+                  <span className="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    Tempo Real
+                  </span>
+                </div>
+
+                {/* CONTAINER MOCKUP WHATSAPP */}
+                <div className="flex-1 bg-[#0b141a] rounded-2xl border border-slate-800 overflow-hidden flex flex-col shadow-2xl">
+                  {/* BARRA SUPERIOR WHATSAPP */}
+                  <div className="bg-[#202c33] px-4 py-3 flex items-center justify-between border-b border-slate-800/60">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-white text-xs">
+                        TC
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-100 flex items-center gap-1.5">
+                          Tenório Confecções
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 inline" />
+                        </p>
+                        <p className="text-[10px] text-emerald-400">online (Robô Ativo)</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CORPO DA CONVERSA */}
+                  <div
+                    className="p-4 flex-1 overflow-y-auto space-y-3"
+                    style={{
+                      backgroundImage: `radial-gradient(#1f2c34 1px, transparent 1px)`,
+                      backgroundSize: '16px 16px'
+                    }}
+                  >
+                    {/* MENSAGEM DO CLIENTE (ANÚNCIO) */}
+                    <div className="flex justify-end">
+                      <div className="bg-[#005c4b] text-slate-100 text-xs p-3 rounded-2xl rounded-tr-none max-w-[85%] shadow-md">
+                        <p>Olá! Vi o anúncio no Facebook e gostaria de saber mais informações e orçamentos.</p>
+                        <div className="text-[9px] text-emerald-200/70 text-right mt-1 flex items-center justify-end gap-1">
+                          <span>12:00</span>
+                          <span>✓✓</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* RESPOSTA DO ROBÔ (FLUXO ANÚNCIO) */}
+                    <div className="flex justify-start">
+                      <div className="bg-[#202c33] text-slate-100 text-xs p-3.5 rounded-2xl rounded-tl-none max-w-[92%] shadow-md border border-slate-700/30">
+                        <div className="whitespace-pre-wrap leading-relaxed">
+                          {fluxoAnuncio.mensagem
+                            .replace(
+                              /\{saudacao\}/g,
+                              new Date().getHours() < 12
+                                ? 'Bom dia'
+                                : new Date().getHours() < 18
+                                ? 'Boa tarde'
+                                : 'Boa noite'
+                            )
+                            .split('\n')
+                            .map((linha, idx) => {
+                              // Formatação básica de negrito (*texto*) e itálico (_texto_)
+                              let formatted = linha;
+                              return (
+                                <span key={idx}>
+                                  {linha}
+                                  <br />
+                                </span>
+                              );
+                            })}
+                        </div>
+                        <div className="text-[9px] text-slate-400 text-right mt-2 flex items-center justify-end gap-1">
+                          <span>12:00</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* BARRA INFERIOR INPUT WHATSAPP */}
+                  <div className="bg-[#202c33] px-3 py-2.5 flex items-center gap-2 border-t border-slate-800/60">
+                    <div className="flex-1 bg-[#2a3942] rounded-xl px-3 py-1.5 text-xs text-slate-400">
+                      Mensagem
+                    </div>
+                    <div className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center text-white">
+                      <Send className="h-3.5 w-3.5" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-800 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={salvarFluxoAnuncio}
+                    disabled={actionLoading}
+                    className="w-full py-2.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center gap-2 transition"
+                  >
+                    <Check className="h-4 w-4" />
+                    Publicar Alterações no Robô Agora
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

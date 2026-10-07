@@ -13,8 +13,16 @@
       "precoBase": 49.90,
       "prazoConfeccao": "15 a 20 dias úteis",
       "pricingTiers": [
-        { "minQty": 1, "maxQty": 10, "unitPrice": 49.90 },
-        { "minQty": 11, "maxQty": null, "unitPrice": 45.80 }
+        {
+          "minQty": 1,
+          "maxQty": 10,
+          "unitPrice": 49.90
+        },
+        {
+          "minQty": 11,
+          "maxQty": null,
+          "unitPrice": 45.80
+        }
       ]
     },
     {
@@ -27,8 +35,16 @@
       "precoBase": 64.90,
       "prazoConfeccao": "30 a 40 dias úteis",
       "pricingTiers": [
-        { "minQty": 1, "maxQty": 10, "unitPrice": 64.90 },
-        { "minQty": 11, "maxQty": null, "unitPrice": 59.90 }
+        {
+          "minQty": 1,
+          "maxQty": 10,
+          "unitPrice": 64.90
+        },
+        {
+          "minQty": 11,
+          "maxQty": null,
+          "unitPrice": 59.90
+        }
       ]
     },
     {
@@ -41,8 +57,16 @@
       "precoBase": 74.90,
       "prazoConfeccao": "15 a 20 dias úteis",
       "pricingTiers": [
-        { "minQty": 1, "maxQty": 10, "unitPrice": 74.90 },
-        { "minQty": 11, "maxQty": null, "unitPrice": 69.90 }
+        {
+          "minQty": 1,
+          "maxQty": 10,
+          "unitPrice": 74.90
+        },
+        {
+          "minQty": 11,
+          "maxQty": null,
+          "unitPrice": 69.90
+        }
       ]
     },
     {
@@ -56,8 +80,16 @@
       "precoBase": 119.90,
       "prazoConfeccao": "15 a 20 dias úteis",
       "pricingTiers": [
-        { "minQty": 1, "maxQty": 10, "unitPrice": 119.90 },
-        { "minQty": 11, "maxQty": null, "unitPrice": 115.80 }
+        {
+          "minQty": 1,
+          "maxQty": 10,
+          "unitPrice": 119.90
+        },
+        {
+          "minQty": 11,
+          "maxQty": null,
+          "unitPrice": 115.80
+        }
       ]
     },
     {
@@ -85,7 +117,11 @@
           ],
           "preco": 28.46,
           "pricingTiers": [
-            { "minQty": 20, "maxQty": null, "unitPrice": 28.46 }
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 28.46
+            }
           ]
         },
         {
@@ -97,7 +133,11 @@
           ],
           "preco": 38.38,
           "pricingTiers": [
-            { "minQty": 20, "maxQty": null, "unitPrice": 38.38 }
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 38.38
+            }
           ]
         },
         {
@@ -109,7 +149,11 @@
           ],
           "preco": 31.66,
           "pricingTiers": [
-            { "minQty": 20, "maxQty": null, "unitPrice": 31.66 }
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 31.66
+            }
           ]
         },
         {
@@ -121,7 +165,11 @@
           ],
           "preco": 33.24,
           "pricingTiers": [
-            { "minQty": 20, "maxQty": null, "unitPrice": 33.24 }
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 33.24
+            }
           ]
         },
         {
@@ -133,7 +181,11 @@
           ],
           "preco": 36.86,
           "pricingTiers": [
-            { "minQty": 20, "maxQty": null, "unitPrice": 36.86 }
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 36.86
+            }
           ]
         },
         {
@@ -145,7 +197,11 @@
           ],
           "preco": 41.40,
           "pricingTiers": [
-            { "minQty": 20, "maxQty": null, "unitPrice": 41.40 }
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 41.40
+            }
           ]
         },
         {
@@ -157,7 +213,11 @@
           ],
           "preco": 48.44,
           "pricingTiers": [
-            { "minQty": 20, "maxQty": null, "unitPrice": 48.44 }
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 48.44
+            }
           ]
         },
         {
@@ -169,7 +229,11 @@
           ],
           "preco": 34.56,
           "pricingTiers": [
-            { "minQty": 20, "maxQty": null, "unitPrice": 34.56 }
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 34.56
+            }
           ]
         },
         {
@@ -181,7 +245,11 @@
           ],
           "preco": 35.90,
           "pricingTiers": [
-            { "minQty": 20, "maxQty": null, "unitPrice": 35.90 }
+            {
+              "minQty": 20,
+              "maxQty": null,
+              "unitPrice": 35.90
+            }
           ]
         },
         {
@@ -191,7 +259,11 @@
           ],
           "preco": 4.00,
           "pricingTiers": [
-            { "minQty": 1, "maxQty": null, "unitPrice": 4.00 }
+            {
+              "minQty": 1,
+              "maxQty": null,
+              "unitPrice": 4.00
+            }
           ]
         }
       ]
@@ -217,7 +289,11 @@
           ],
           "preco": 129.80,
           "pricingTiers": [
-            { "minQty": 1, "maxQty": null, "unitPrice": 129.80 }
+            {
+              "minQty": 1,
+              "maxQty": null,
+              "unitPrice": 129.80
+            }
           ]
         },
         {
@@ -228,7 +304,11 @@
           ],
           "preco": 289.80,
           "pricingTiers": [
-            { "minQty": 1, "maxQty": null, "unitPrice": 289.80 }
+            {
+              "minQty": 1,
+              "maxQty": null,
+              "unitPrice": 289.80
+            }
           ]
         }
       ]
@@ -244,7 +324,11 @@
       "precoBase": 99.80,
       "prazoConfeccao": "30 a 40 dias úteis",
       "pricingTiers": [
-        { "minQty": 1, "maxQty": null, "unitPrice": 99.80 }
+        {
+          "minQty": 1,
+          "maxQty": null,
+          "unitPrice": 99.80
+        }
       ]
     },
     {
@@ -260,7 +344,11 @@
       "permiteDescontoProgressivo": false,
       "prazoConfeccao": "30 a 40 dias úteis",
       "pricingTiers": [
-        { "minQty": 10, "maxQty": null, "unitPrice": 49.80 }
+        {
+          "minQty": 10,
+          "maxQty": null,
+          "unitPrice": 49.80
+        }
       ]
     }
   ],
