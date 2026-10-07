@@ -532,17 +532,16 @@ client.on("message_create", async (msg) => {
       else saudacao = "Boa noite";
 
       const msgAnuncio =
-        `👋 *${saudacao}! Seja muito bem-vindo(a) à Tenório Confecções!* 🏆⚽✨\n\n` +
-        `Que ótimo ver seu interesse nas nossas *Camisetas e Uniformes Esportivos Personalizados* (Dry-Fit / Interclasse / Equipes / Torcidas)!\n\n` +
-        `Trabalhamos com *Dry-Fit tecnológico de alta absorção, cores vibrantes que não desbotam e costura reforçada* para máxima durabilidade.\n\n` +
-        `📋 *Para gerarmos sua proposta personalizada com preço promocional por quantidade, responda:* \n\n` +
-        `1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta, Regata Esportiva, Abadá ou Kit com Calção)\n` +
-        `2️⃣ *Qual a quantidade aproximada de peças?* (Ex: 10, 20, 50, 100+ unidades)\n` +
-        `3️⃣ *Qual a finalidade?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n` +
-        `4️⃣ *Já possui a arte/logo do time?* (Sim / Não / Pode enviar a imagem aqui no chat)\n` +
-        `5️⃣ *Qual o prazo que precisa das peças prontas?*\n\n` +
-        `✍️ *Envie suas respostas aqui em uma única mensagem* que nosso robô já calcula seu orçamento e nossa equipe dará continuidade imediata! 🚀\n\n` +
-        `_A qualquer momento, digite *menu* para ver outras opções._`;
+        `👋 *${saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\n` +
+        `Bora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n` +
+        `📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n` +
+        `1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n` +
+        `2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n` +
+        `3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n` +
+        `4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n` +
+        `5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n` +
+        `✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n` +
+        `_Se preferir ver outras opções, digite *menu* a qualquer momento._`;
 
       await responder(msgAnuncio);
       return;

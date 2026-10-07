@@ -766,14 +766,26 @@ function interpretarRespostaQuestionario(textoOriginal, nomeContato) {
     locais = "Manga";
   }
 
-  // 5. Logo / Arte
+  // 5. Logo / Arte ou Personalização Individual
   let temArte = "A confirmar";
   const matchLinha5 = textoOriginal.match(/(?:^|\n)\s*5\s*[\.\:\-\)]\s*([^\n\r]+)/m);
   if (matchLinha5) {
-    temArte = matchLinha5[1].replace(/[*_~]/g, "").trim();
+    const respLinha5 = matchLinha5[1].replace(/[*_~]/g, "").trim();
+    if (/^(sim|s|quero|vai ter|com certeza|positivo)/i.test(respLinha5)) {
+      temArte = "Com Nome e Número Individual";
+    } else if (/^(não|nao|n|sem)/i.test(respLinha5)) {
+      temArte = "Sem Nome/Número Individual";
+    } else {
+      temArte = respLinha5;
+    }
   } else {
-    if (textoLimpo.includes("sim") || textoLimpo.includes("tenho") || textoLimpo.includes("ja tenho")) temArte = "Cliente já possui a arte";
-    else if (textoLimpo.includes("nao") || textoLimpo.includes("não") || textoLimpo.includes("criar")) temArte = "Necessário criar layout";
+    if (textoLimpo.includes("nome e numero") || textoLimpo.includes("nome e número") || textoLimpo.includes("nome individual")) {
+      temArte = "Com Nome e Número Individual";
+    } else if (textoLimpo.includes("sim") || textoLimpo.includes("tenho") || textoLimpo.includes("ja tenho")) {
+      temArte = "Cliente já possui a arte";
+    } else if (textoLimpo.includes("nao") || textoLimpo.includes("não") || textoLimpo.includes("criar")) {
+      temArte = "Necessário criar layout";
+    }
   }
 
   // Grade de tamanhos se mencionada
@@ -786,7 +798,7 @@ function interpretarRespostaQuestionario(textoOriginal, nomeContato) {
   // Observações
   let obs = [];
   if (segmento) obs.push(`Segmento: ${segmento}`);
-  if (temArte && temArte !== "A confirmar") obs.push(`Arte/Logo: ${temArte}`);
+  if (temArte && temArte !== "A confirmar") obs.push(`Personalização: ${temArte}`);
   const observacoes = obs.length > 0 ? obs.join(" | ") : "Solicitação respondida via WhatsApp";
 
   // Gera código único
