@@ -883,6 +883,16 @@ client.on("message_create", async (msg) => {
 // =====================================
 const app = express();
 app.use(cors());
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Private-Network", "true");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 app.use(express.json({ limit: "10mb" }));
 
 // 1. Status do Robô, QR Code, Fila de Atendimento e Configs

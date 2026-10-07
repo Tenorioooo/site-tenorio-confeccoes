@@ -249,12 +249,31 @@ export default function ChatbotAdminTab() {
 
   const carregarStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${botUrl}/api/status`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Servidor do bot offline');
-      const json: StatusResponse = await res.json();
-      setData(json);
+      // 1. Tenta carregar via proxy Next.js (funciona em HTTPS, Vercel e Localhost sem problemas de CORS ou Mixed Content)
+      let res = await fetch('/api/admin/chatbot/status', { cache: 'no-store' });
+      if (res.ok) {
+        const json: StatusResponse = await res.json();
+        if (json && json.status && json.status !== 'DISCONNECTED') {
+          setData(json);
+          return;
+        } else if (json && json.status) {
+          setData(json);
+        }
+      }
+
+      // 2. Fallback: tenta carregar direto do localhost:3001
+      if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        try {
+          const directRes = await fetch(`${botUrl}/api/status`, { cache: 'no-store' });
+          if (directRes.ok) {
+            const directJson: StatusResponse = await directRes.json();
+            setData(directJson);
+            return;
+          }
+        } catch (e) {}
+      }
     } catch (e: any) {
-      // Se falhar a conexão direta, mantém os dados anteriores ou null
+      // Se falhar a conexão, mantém estado anterior
     } finally {
       setLoading(false);
     }
@@ -262,10 +281,20 @@ export default function ChatbotAdminTab() {
 
   const carregarTabela = useCallback(async () => {
     try {
-      const res = await fetch(`${botUrl}/api/tabela`, { cache: 'no-store' });
+      const res = await fetch('/api/admin/chatbot/tabela', { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
-        setTabela(json.tabela);
+        if (json?.tabela) {
+          setTabela(json.tabela);
+          return;
+        }
+      }
+
+      // Fallback direto
+      const directRes = await fetch(`${botUrl}/api/tabela`, { cache: 'no-store' });
+      if (directRes.ok) {
+        const directJson = await directRes.json();
+        setTabela(directJson.tabela);
       }
     } catch (e) {}
   }, [botUrl]);
@@ -273,29 +302,28 @@ export default function ChatbotAdminTab() {
   // Carregar lista de múltiplos fluxos do robô ou da base
   const carregarFluxos = useCallback(async () => {
     try {
-      const res = await fetch(`${botUrl}/api/config/fluxos`, { cache: 'no-store' });
-      if (res.ok) {
-        const json = await res.json();
-        if (Array.isArray(json.fluxos) && json.fluxos.length > 0) {
-          setFluxos(json.fluxos);
+      const resSite = await fetch('/api/admin/chatbot/config', { cache: 'no-store' });
+      if (resSite.ok) {
+        const jsonSite = await resSite.json();
+        if (jsonSite?.config?.fluxos && Array.isArray(jsonSite.config.fluxos) && jsonSite.config.fluxos.length > 0) {
+          setFluxos(jsonSite.config.fluxos);
           return;
         }
       }
     } catch (e) {}
 
-    // Fallback: tentar carregar do backend Next.js
     try {
-      const resSite = await fetch('/api/admin/chatbot/config', { cache: 'no-store' });
-      if (resSite.ok) {
-        const jsonSite = await resSite.json();
-        if (jsonSite?.config?.fluxos && Array.isArray(jsonSite.config.fluxos)) {
-          setFluxos(jsonSite.config.fluxos);
+      const res = await fetch(`${botUrl}/api/config/fluxos`, { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json.fluxos) && json.fluxos.length > 0) {
+          setFluxos(json.fluxos);
         }
       }
     } catch (e) {}
   }, [botUrl]);
 
-  // Carregar configurações de notificação do site (apenas uma vez no carregamento inicial)
+  // Carregar configurações de notificação do site
   const carregarConfiguracoes = useCallback(async () => {
     if (configLoadedRef.current) return;
     try {
@@ -320,6 +348,20 @@ export default function ChatbotAdminTab() {
       }
     } catch (e) {}
   }, []);
+
+  // Hook principal de inicialização e polling contínuo (a cada 3.5s)
+  useEffect(() => {
+    carregarConfiguracoes();
+    carregarFluxos();
+    carregarTabela();
+    carregarStatus();
+
+    const interval = setInterval(() => {
+      carregarStatus();
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [carregarConfiguracoes, carregarFluxos, carregarTabela, carregarStatus]);
 
   // Salvar Lista Completa de Fluxos (No Robô e no Banco de Dados)
   const salvarTodosFluxos = async (novaListaFluxos?: FluxoItem[]) => {
