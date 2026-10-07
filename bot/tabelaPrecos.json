@@ -5,11 +5,17 @@
         "algodao",
         "algodão",
         "camiseta personalizada 100% algodão",
-        "camiseta algodão"
+        "camiseta algodão",
+        "camiseta 100% algodao",
+        "camiseta 100% algodão"
       ],
       "nome": "Camiseta 100% Algodão Personalizada",
       "precoBase": 49.90,
-      "prazoConfeccao": "15 a 20 dias úteis"
+      "prazoConfeccao": "15 a 20 dias úteis",
+      "pricingTiers": [
+        { "minQty": 1, "maxQty": 10, "unitPrice": 49.90 },
+        { "minQty": 11, "maxQty": null, "unitPrice": 45.80 }
+      ]
     },
     {
       "termos": [
@@ -19,7 +25,11 @@
       ],
       "nome": "Camiseta Dry-Fit Personalizada",
       "precoBase": 64.90,
-      "prazoConfeccao": "30 a 40 dias úteis"
+      "prazoConfeccao": "30 a 40 dias úteis",
+      "pricingTiers": [
+        { "minQty": 1, "maxQty": 10, "unitPrice": 64.90 },
+        { "minQty": 11, "maxQty": null, "unitPrice": 59.90 }
+      ]
     },
     {
       "termos": [
@@ -29,7 +39,11 @@
       ],
       "nome": "Camisa Polo Personalizada",
       "precoBase": 74.90,
-      "prazoConfeccao": "15 a 20 dias úteis"
+      "prazoConfeccao": "15 a 20 dias úteis",
+      "pricingTiers": [
+        { "minQty": 1, "maxQty": 10, "unitPrice": 74.90 },
+        { "minQty": 11, "maxQty": null, "unitPrice": 69.90 }
+      ]
     },
     {
       "termos": [
@@ -40,7 +54,11 @@
       ],
       "nome": "Moletom Canguru Personalizado",
       "precoBase": 119.90,
-      "prazoConfeccao": "15 a 20 dias úteis"
+      "prazoConfeccao": "15 a 20 dias úteis",
+      "pricingTiers": [
+        { "minQty": 1, "maxQty": 10, "unitPrice": 119.90 },
+        { "minQty": 11, "maxQty": null, "unitPrice": 115.80 }
+      ]
     },
     {
       "termos": [
@@ -48,7 +66,8 @@
         "caneca",
         "caneca de alumínio",
         "caneca de aluminio",
-        "caneca personalizada"
+        "caneca personalizada",
+        "tirante"
       ],
       "nome": "Caneca de Alumínio Personalizada",
       "precoBase": 28.46,
@@ -64,7 +83,10 @@
             "300 ml",
             "300"
           ],
-          "preco": 28.46
+          "preco": 28.46,
+          "pricingTiers": [
+            { "minQty": 20, "maxQty": null, "unitPrice": 28.46 }
+          ]
         },
         {
           "nome": "450ml",
@@ -73,7 +95,10 @@
             "450 ml",
             "450"
           ],
-          "preco": 38.38
+          "preco": 38.38,
+          "pricingTiers": [
+            { "minQty": 20, "maxQty": null, "unitPrice": 38.38 }
+          ]
         },
         {
           "nome": "500ml",
@@ -82,7 +107,10 @@
             "500 ml",
             "500"
           ],
-          "preco": 31.66
+          "preco": 31.66,
+          "pricingTiers": [
+            { "minQty": 20, "maxQty": null, "unitPrice": 31.66 }
+          ]
         },
         {
           "nome": "600ml",
@@ -91,7 +119,10 @@
             "600 ml",
             "600"
           ],
-          "preco": 33.24
+          "preco": 33.24,
+          "pricingTiers": [
+            { "minQty": 20, "maxQty": null, "unitPrice": 33.24 }
+          ]
         },
         {
           "nome": "700ml",
@@ -100,7 +131,10 @@
             "700 ml",
             "700"
           ],
-          "preco": 36.86
+          "preco": 36.86,
+          "pricingTiers": [
+            { "minQty": 20, "maxQty": null, "unitPrice": 36.86 }
+          ]
         },
         {
           "nome": "750ml",
@@ -109,7 +143,10 @@
             "750 ml",
             "750"
           ],
-          "preco": 41.40
+          "preco": 41.40,
+          "pricingTiers": [
+            { "minQty": 20, "maxQty": null, "unitPrice": 41.40 }
+          ]
         },
         {
           "nome": "790ml",
@@ -118,7 +155,10 @@
             "790 ml",
             "790"
           ],
-          "preco": 48.44
+          "preco": 48.44,
+          "pricingTiers": [
+            { "minQty": 20, "maxQty": null, "unitPrice": 48.44 }
+          ]
         },
         {
           "nome": "800ml",
@@ -127,7 +167,10 @@
             "800 ml",
             "800"
           ],
-          "preco": 34.56
+          "preco": 34.56,
+          "pricingTiers": [
+            { "minQty": 20, "maxQty": null, "unitPrice": 34.56 }
+          ]
         },
         {
           "nome": "850ml",
@@ -136,15 +179,20 @@
             "850 ml",
             "850"
           ],
-          "preco": 35.90
+          "preco": 35.90,
+          "pricingTiers": [
+            { "minQty": 20, "maxQty": null, "unitPrice": 35.90 }
+          ]
         },
         {
           "nome": "Nome Individual",
           "termos": [
-            "nome individual",
             "nome individual"
           ],
-          "preco": 4.00
+          "preco": 4.00,
+          "pricingTiers": [
+            { "minQty": 1, "maxQty": null, "unitPrice": 4.00 }
+          ]
         }
       ]
     },
@@ -167,7 +215,10 @@
             "tamanho unico",
             "wind banner"
           ],
-          "preco": 129.80
+          "preco": 129.80,
+          "pricingTiers": [
+            { "minQty": 1, "maxQty": null, "unitPrice": 129.80 }
+          ]
         },
         {
           "nome": "Kit Suporte + Wind Banner",
@@ -175,7 +226,10 @@
             "kit suporte",
             "suporte"
           ],
-          "preco": 289.80
+          "preco": 289.80,
+          "pricingTiers": [
+            { "minQty": 1, "maxQty": null, "unitPrice": 289.80 }
+          ]
         }
       ]
     },
@@ -188,7 +242,10 @@
       ],
       "nome": "Bandeira Personalizada",
       "precoBase": 99.80,
-      "prazoConfeccao": "30 a 40 dias úteis"
+      "prazoConfeccao": "30 a 40 dias úteis",
+      "pricingTiers": [
+        { "minQty": 1, "maxQty": null, "unitPrice": 99.80 }
+      ]
     },
     {
       "termos": [
@@ -201,7 +258,10 @@
       "precoBase": 49.80,
       "quantidadeMinima": 10,
       "permiteDescontoProgressivo": false,
-      "prazoConfeccao": "30 a 40 dias úteis"
+      "prazoConfeccao": "30 a 40 dias úteis",
+      "pricingTiers": [
+        { "minQty": 10, "maxQty": null, "unitPrice": 49.80 }
+      ]
     }
   ],
   "precoPadrao": 39.90,

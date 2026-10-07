@@ -4,28 +4,15 @@
 const fs = require("fs");
 const path = require("path");
 
-// Carrega tabela de preços (com fallback caso o arquivo seja modificado dinamicamente)
+/// Carrega tabela de preços (com fallback caso o arquivo seja modificado dinamicamente e integração com banco SQLite)
 function carregarTabelaPrecos() {
-  try {
-    const caminho = path.join(__dirname, "tabelaPrecos.json");
-    if (fs.existsSync(caminho)) {
-      const conteudo = fs.readFileSync(caminho, "utf-8");
-      return JSON.parse(conteudo);
-    }
-  } catch (err) {
-    console.error("⚠️ Erro ao ler tabelaPrecos.json, usando valores padrão:", err);
-  }
-
-  return {
+  let tabela = {
     produtos: [],
     precoPadrao: 39.9,
     custoAdicionalPorLocalExtra: 5.0,
     descontoProgressivo: [
-      { min: 1, max: 9, percentual: 0, descricao: "Sem desconto" },
-      { min: 10, max: 24, percentual: 7, descricao: "7% de desconto" },
-      { min: 25, max: 49, percentual: 12, descricao: "12% de desconto" },
-      { min: 50, max: 99, percentual: 18, descricao: "18% de desconto" },
-      { min: 100, max: 99999, percentual: 25, descricao: "25% de desconto" },
+      { min: 1, max: 10, percentual: 0, descricao: "Sem desconto" },
+      { min: 11, max: 99999, percentual: 0, descricao: "Sem desconto" },
     ],
     informacoesPagamento: {
       forma: "PIX",
@@ -33,6 +20,117 @@ function carregarTabelaPrecos() {
       prazoProducao: "7 a 12 dias úteis após a aprovação do layout virtual.",
     },
   };
+
+  try {
+    const caminho = path.join(__dirname, "tabelaPrecos.json");
+    if (fs.existsSync(caminho)) {
+      const conteudo = fs.readFileSync(caminho, "utf-8");
+      tabela = JSON.parse(conteudo);
+    }
+  } catch (err) {
+    console.error("⚠️ Erro ao ler tabelaPrecos.json, usando valores padrão:", err);
+  }
+
+  // Se o banco dev.db existir no projeto, sincroniza os pricingTiers atualizados
+  try {
+    const pathsToCheck = [
+      path.join(__dirname, "../dev.db"),
+      path.join(__dirname, "dev.db"),
+      path.join(process.cwd(), "dev.db")
+    ];
+    let dbPath = pathsToCheck.find(p => fs.existsSync(p));
+    if (dbPath) {
+      const { DatabaseSync } = require("node:sqlite");
+      const db = new DatabaseSync(dbPath);
+      const rows = db.prepare("SELECT id, name, slug, category, basePrice, pricingTiers, leadTime, minQuantity FROM Product WHERE active = 1").all();
+      
+      if (rows && rows.length > 0) {
+        for (const row of rows) {
+          if (!row.pricingTiers && !row.basePrice) continue;
+          
+          let parsedTiers = null;
+          try {
+            parsedTiers = typeof row.pricingTiers === "string" ? JSON.parse(row.pricingTiers) : row.pricingTiers;
+          } catch {}
+
+          // Encontra o produto correspondente na tabela de preços
+          const nomeNormalizado = (row.name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          const prodExistente = (tabela.produtos || []).find((p) => {
+            const pNome = (p.nome || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return pNome.includes(nomeNormalizado) || nomeNormalizado.includes(pNome) || 
+                   (p.termos && p.termos.some(t => nomeNormalizado.includes(t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""))));
+          });
+
+          if (prodExistente) {
+            if (row.leadTime && !prodExistente.prazoConfeccao) prodExistente.prazoConfeccao = row.leadTime;
+            if (parsedTiers) {
+              if (Array.isArray(parsedTiers) && parsedTiers.length > 0) {
+                prodExistente.pricingTiers = parsedTiers;
+              } else if (parsedTiers.mode === "by_variant" && parsedTiers.variantTiers) {
+                prodExistente.pricingConfig = parsedTiers;
+              } else if (parsedTiers.mode === "unified" && Array.isArray(parsedTiers.tiers) && parsedTiers.tiers.length > 0) {
+                prodExistente.pricingTiers = parsedTiers.tiers;
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    // Silencioso se SQLite não estiver acessível, usa tabelaPrecos.json
+  }
+
+  return tabela;
+}
+
+/**
+ * Função utilitária para resolver o preço unitário a partir de faixas (pricingTiers)
+ */
+function resolverPrecoPorFaixa(tiersInput, quantidade) {
+  if (!tiersInput) return null;
+  let tiers = tiersInput;
+  if (typeof tiers === "string") {
+    try {
+      tiers = JSON.parse(tiers);
+    } catch {
+      return null;
+    }
+  }
+  if (tiers && typeof tiers === "object" && !Array.isArray(tiers)) {
+    if (Array.isArray(tiers.tiers)) {
+      tiers = tiers.tiers;
+    }
+  }
+  if (!Array.isArray(tiers) || tiers.length === 0) return null;
+
+  const qtd = Number(quantidade) || 1;
+  const tiersValidos = tiers
+    .map((t) => ({
+      minQty: Number(t.minQty || t.min || t.quantidadeMinima || 0),
+      maxQty: t.maxQty !== null && t.maxQty !== undefined && t.maxQty !== "" ? Number(t.maxQty || t.max || t.quantidadeMaxima) : null,
+      unitPrice: Number(t.unitPrice || t.preco || t.precoUnitario || 0),
+    }))
+    .filter((t) => t.minQty > 0 && t.unitPrice > 0)
+    .sort((a, b) => a.minQty - b.minQty);
+
+  if (tiersValidos.length === 0) return null;
+
+  // Busca faixa que engloba a quantidade informada
+  for (const tier of tiersValidos) {
+    if (qtd >= tier.minQty) {
+      if (tier.maxQty === null || tier.maxQty === undefined || qtd <= tier.maxQty) {
+        return tier.unitPrice;
+      }
+    }
+  }
+
+  // Se a quantidade for menor que a primeira faixa
+  if (qtd < tiersValidos[0].minQty) {
+    return tiersValidos[0].unitPrice;
+  }
+
+  // Se for superior a todas as faixas
+  return tiersValidos[tiersValidos.length - 1].unitPrice;
 }
 
 /**
@@ -150,6 +248,13 @@ function parseOrcamento(textoOriginal) {
       quantidade = 1;
     }
 
+    // Preço Estimado unitário do site (ex: "• Preço Estimado: R$ 45,80 / un")
+    let precoEstimadoSite = null;
+    const matchPrecoSite = detalhes.match(/Pre[çc]o\s*Estimado[:*\s~_]*R\$\s*([0-9]+(?:[.,][0-9]{2})?)/i);
+    if (matchPrecoSite) {
+      precoEstimadoSite = parseFloat(matchPrecoSite[1].replace(",", "."));
+    }
+
     // Estampa
     const matchEstampa = detalhes.match(/Estampa[:*\s~_]*([^\n\r]+)/i);
     const estampa = matchEstampa ? matchEstampa[1].replace(/^[•\-\s*~_]+|[•\-\s*~_]+$/g, "").trim() : "";
@@ -165,6 +270,7 @@ function parseOrcamento(textoOriginal) {
       grade,
       estampa,
       locais,
+      precoEstimadoSite,
     });
   }
 
@@ -185,6 +291,7 @@ function parseOrcamento(textoOriginal) {
       grade: "",
       estampa: "",
       locais: "",
+      precoEstimadoSite: null,
     });
   }
 
@@ -192,7 +299,7 @@ function parseOrcamento(textoOriginal) {
 }
 
 /**
- * Busca preço unitário base e adicionais para um produto (considerando possíveis variações)
+ * Busca preço unitário base e adicionais para um produto (considerando possíveis variações e faixas de quantidade / pricingTiers)
  */
 function obterPrecoUnitario(item, tabela) {
   const nomeLimpo = (item.nome || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -207,8 +314,8 @@ function obterPrecoUnitario(item, tabela) {
   let produtoEncontrado = null;
   let variacaoIdentificada = null;
 
-  for (const prod of tabela.produtos) {
-    for (const termo of prod.termos) {
+  for (const prod of (tabela.produtos || [])) {
+    for (const termo of (prod.termos || [])) {
       const termoLimpo = termo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       if (nomeLimpo.includes(termoLimpo)) {
         produtoEncontrado = prod;
@@ -231,6 +338,7 @@ function obterPrecoUnitario(item, tabela) {
           listaVariacoes.push({
             nome: v.nome,
             preco: v.preco,
+            pricingTiers: v.pricingTiers || v.faixasPreco,
             termo: t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
           });
         }
@@ -245,9 +353,40 @@ function obterPrecoUnitario(item, tabela) {
       if (regexTermo.test(textoParaVariacao) || textoParaVariacao.includes(itemVar.termo)) {
         precoEncontrado = itemVar.preco;
         variacaoIdentificada = itemVar.nome;
+
+        if (itemVar.pricingTiers) {
+          const tierPrice = resolverPrecoPorFaixa(itemVar.pricingTiers, item.quantidade);
+          if (tierPrice !== null && tierPrice > 0) {
+            precoEncontrado = tierPrice;
+          }
+        }
         break;
       }
     }
+  }
+
+  // Aplica cálculo de faixas de preço / pricingTiers do produto (ex: 1 a 10 un -> R$ 49,90 | 11+ un -> R$ 45,80)
+  if (produtoEncontrado) {
+    if (produtoEncontrado.pricingTiers || produtoEncontrado.faixasPreco) {
+      const tiers = produtoEncontrado.pricingTiers || produtoEncontrado.faixasPreco;
+      const tierPrice = resolverPrecoPorFaixa(tiers, item.quantidade);
+      if (tierPrice !== null && tierPrice > 0) {
+        precoEncontrado = tierPrice;
+      }
+    } else if (produtoEncontrado.pricingConfig && produtoEncontrado.pricingConfig.mode === "by_variant" && variacaoIdentificada) {
+      const vTiers = produtoEncontrado.pricingConfig.variantTiers?.[variacaoIdentificada];
+      if (vTiers) {
+        const tierPrice = resolverPrecoPorFaixa(vTiers, item.quantidade);
+        if (tierPrice !== null && tierPrice > 0) {
+          precoEncontrado = tierPrice;
+        }
+      }
+    }
+  }
+
+  // Se o site enviou um Preço Estimado explícito e não encontramos regra conflitante, adota o valor do site
+  if (precoEncontrado === null && item.precoEstimadoSite && item.precoEstimadoSite > 0) {
+    precoEncontrado = item.precoEstimadoSite;
   }
 
   if (precoEncontrado === null) {
