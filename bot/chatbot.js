@@ -59,20 +59,86 @@ function getPadraoFluxoAnuncio() {
       "dryfit",
       "esportivo",
       "esportiva",
-      "uniforme esportivo",
-      "camisa de time",
-      "torcida"
+      "camisa de time"
     ],
     mensagem: `👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._`
   };
+}
+
+function getPadraoFluxos() {
+  return [
+    {
+      id: "fluxo-esportivo-ads",
+      nome: "Campanha Meta Ads - Camisetas Esportivas / Interclasse",
+      ativo: true,
+      tipoAcao: "QUESTIONARIO_ORCAMENTO",
+      gatilhos: [
+        "vi o anuncio",
+        "vi o anúncio",
+        "vim pelo anuncio",
+        "vim pelo anúncio",
+        "anuncio do facebook",
+        "anúncio do facebook",
+        "anuncio do instagram",
+        "anúncio do instagram",
+        "anúncio",
+        "anuncio",
+        "interclasse",
+        "dry-fit",
+        "dry fit",
+        "dryfit",
+        "esportivo",
+        "esportiva",
+        "camisa de time"
+      ],
+      origemLead: "Meta Ads (Esportivo / Interclasse)",
+      mensagem: `👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._`
+    },
+    {
+      id: "fluxo-empresas",
+      nome: "Campanha Corporativa - Uniformes para Empresas",
+      ativo: true,
+      tipoAcao: "QUESTIONARIO_ORCAMENTO",
+      gatilhos: [
+        "uniforme para empresa",
+        "uniformes corporativos",
+        "uniforme de trabalho",
+        "polo bordada",
+        "camisa polo empresa",
+        "uniforme empresarial"
+      ],
+      origemLead: "Campanha Empresas",
+      mensagem: `👋 *{saudacao}! Muito bem-vindo(a) à Tenório Confecções!* 👔🏢\n\nCuidamos da identidade visual e uniformização da sua empresa com alta durabilidade e acabamento profissional.\n\n📋 *Para prepararmos sua proposta corporativa sob medida:*\n\n1️⃣ *Quais modelos você procura?* (Ex: Camisas Polo, Camisetas Algodão, Aventais, Jalecos)\n2️⃣ *Quantidade estimada de peças?* (Ex: 15, 30, 100 peças)\n3️⃣ *Sua empresa já possui o logotipo vetorizado ou em foto?*\n4️⃣ *Qual a sua cidade / estado?*\n\n✍️ *Pode responder nesta mesma mensagem* que nossa equipe/sistema já monta seu orçamento!`
+    },
+    {
+      id: "fluxo-formandos",
+      nome: "Campanha Estudantil - Formandos / Terceirão",
+      ativo: false,
+      tipoAcao: "QUESTIONARIO_ORCAMENTO",
+      gatilhos: [
+        "terceirão",
+        "terceirao",
+        "camiseta de formandos",
+        "camisa de formando",
+        "nono ano",
+        "uniforme escolar",
+        "turma da faculdade"
+      ],
+      origemLead: "Campanha Formandos / Terceirão",
+      mensagem: `🎓 *{saudacao}! Parabéns pela formatura e reta final de estudos!* 🎉👕\n\nVamos produzir as camisetas/moletons da sua turma com o melhor acabamento e preço especial de atacado!\n\n📋 *Me conta rapidinho:*\n1️⃣ *Quantas peças/alunos são na turma?*\n2️⃣ *Qual o modelo preferido?* (Camiseta Tradicional 100% Algodão, Raglan, Dry-Fit ou Moletom)\n3️⃣ *Já têm o desenho/tema da turma ou querem auxílio para criar?*\n\n✍️ *Envie sua resposta aqui* que já passamos os valores especiais com desconto progressivo para a turma toda!`
+    }
+  ];
 }
 
 function carregarConfigNotificacoes() {
   try {
     if (fs.existsSync(CAMINHO_CONFIG_NOTIFICACOES)) {
       const config = JSON.parse(fs.readFileSync(CAMINHO_CONFIG_NOTIFICACOES, "utf-8"));
+      if (!Array.isArray(config.fluxos) || config.fluxos.length === 0) {
+        config.fluxos = getPadraoFluxos();
+      }
       if (!config.fluxoAnuncio) {
-        config.fluxoAnuncio = getPadraoFluxoAnuncio();
+        config.fluxoAnuncio = config.fluxos[0] || getPadraoFluxoAnuncio();
       }
       return config;
     }
@@ -84,10 +150,22 @@ function carregarConfigNotificacoes() {
     notificarPushWeb: true,
     siteApiUrl: "https://www.tenorioconfeccoes.shop/api/notifications/send",
     fluxoAnuncio: getPadraoFluxoAnuncio(),
+    fluxos: getPadraoFluxos(),
   };
 }
 
 function salvarConfigNotificacoes(config) {
+  if (Array.isArray(config.fluxos) && config.fluxos.length > 0) {
+    const primeiroAnuncio = config.fluxos.find(f => f.id === "fluxo-esportivo-ads" || f.nome.toLowerCase().includes("anúncio") || f.nome.toLowerCase().includes("anuncio")) || config.fluxos[0];
+    if (primeiroAnuncio) {
+      config.fluxoAnuncio = {
+        ativo: primeiroAnuncio.ativo,
+        tituloCampanha: primeiroAnuncio.nome,
+        gatilhos: primeiroAnuncio.gatilhos,
+        mensagem: primeiroAnuncio.mensagem
+      };
+    }
+  }
   fs.writeFileSync(CAMINHO_CONFIG_NOTIFICACOES, JSON.stringify(config, null, 2), "utf-8");
 }
 
@@ -462,14 +540,17 @@ client.on("message_create", async (msg) => {
     }
 
     // =====================================
-    // 0.1 RESPOSTA AO QUESTIONÁRIO DE ORÇAMENTO (GERAL OU ANÚNCIO)
+    // 0.1 RESPOSTA AO QUESTIONÁRIO DE ORÇAMENTO (GERAL, ANÚNCIO OU FLUXO PERSONALIZADO)
     // =====================================
     const estadoUsuario = estadosConversa.get(msg.from);
     if (
       estadoUsuario &&
-      (estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO" || estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO_ANUNCIO")
+      (estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO" ||
+       estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO_ANUNCIO" ||
+       estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO_FLUXO")
     ) {
-      const isAnuncio = estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO_ANUNCIO";
+      const isFluxo = estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO_FLUXO" || estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO_ANUNCIO";
+      const origemFluxo = estadoUsuario.origemLead || (estadoUsuario.etapa === "AGUARDANDO_DADOS_ORCAMENTO_ANUNCIO" ? "Meta Ads (Esportivo)" : "Atendimento Direto");
       const expirado = estadoUsuario.timestamp && Date.now() - estadoUsuario.timestamp > 15 * 60 * 1000;
       const ehOpcaoMenu = /^(menu|voltar|cancelar|inicio|início|1|2|3|4|5)$/i.test(texto) ||
                           texto.includes("atendente") || texto.includes("humano") || texto.includes("vendedor") ||
@@ -481,7 +562,7 @@ client.on("message_create", async (msg) => {
         // Não retorna aqui se for opção de menu, permitindo que caia diretamente no switch/if da opção desejada
       } else {
         estadosConversa.delete(msg.from);
-        console.log(`📝 [Questionário ${isAnuncio ? "de Anúncio " : ""}Respondido] Interpretando dados enviados por ${msg.from}...`);
+        console.log(`📝 [Questionário ${isFluxo ? `de Fluxo (${origemFluxo}) ` : ""}Respondido] Interpretando dados enviados por ${msg.from}...`);
 
         let nomeContato = "Cliente";
         try {
@@ -492,10 +573,10 @@ client.on("message_create", async (msg) => {
         } catch (e) {}
 
         const dadosOrcamento = interpretarRespostaQuestionario(msg.body, nomeContato);
-        if (isAnuncio) {
+        if (isFluxo) {
           dadosOrcamento.observacoes = dadosOrcamento.observacoes 
-            ? `${dadosOrcamento.observacoes} | Origem: Anúncio Meta Ads (Esportivo)` 
-            : "Origem: Anúncio Meta Ads (Esportivo)";
+            ? `${dadosOrcamento.observacoes} | Origem: ${origemFluxo}` 
+            : `Origem: ${origemFluxo}`;
         }
 
         const calculo = calcularOrcamento(dadosOrcamento);
@@ -515,16 +596,16 @@ client.on("message_create", async (msg) => {
         // Sincroniza e grava no banco de dados do Painel Admin (/api/quotes)
         salvarOrcamentoNoBanco(calculo, msg.from);
 
-        // Notifica admin sobre novo orçamento com destaque se for de anúncio
+        // Notifica admin sobre novo orçamento com destaque se for de campanha / fluxo
         const valorMoeda = (calculo.totalLiquido || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-        const tituloNotif = isAnuncio
-          ? `🔥 LEAD DE ANÚNCIO ADS (${valorMoeda})`
+        const tituloNotif = isFluxo
+          ? `🔥 LEAD: ${origemFluxo.toUpperCase()} (${valorMoeda})`
           : `💰 Novo Orçamento Gerado (${valorMoeda})`;
 
         dispararNotificacaoAdmin({
           tipo: "NOVO_ORCAMENTO",
           titulo: tituloNotif,
-          mensagem: `*Cliente:* ${nomeContato}\n*Volume:* ${calculo.totalPecas} peças\n*Valor Total:* ${valorMoeda}\n*Origem:* ${isAnuncio ? "Campanha Facebook/Instagram Ads" : "WhatsApp Direto"}`,
+          mensagem: `*Cliente:* ${nomeContato}\n*Volume:* ${calculo.totalPecas} peças\n*Valor Total:* ${valorMoeda}\n*Origem:* ${isFluxo ? origemFluxo : "WhatsApp Direto"}`,
           dados: { clientePhone: msg.from, nome: nomeContato },
         });
 
@@ -534,35 +615,68 @@ client.on("message_create", async (msg) => {
     }
 
     // =====================================
-    // 1. RECONHECIMENTO DE MENSAGENS DE ANÚNCIO (FACEBOOK / INSTAGRAM ADS)
+    // 1. RECONHECIMENTO DE MÚLTIPLOS FLUXOS DE ATENDIMENTO / CAMPANHAS (ADS, EMPRESAS, ETC)
     // =====================================
     const configNotifAtual = carregarConfigNotificacoes();
-    const fluxoAnuncio = configNotifAtual.fluxoAnuncio || getPadraoFluxoAnuncio();
+    const fluxosAtivos = (Array.isArray(configNotifAtual.fluxos) ? configNotifAtual.fluxos : getPadraoFluxos())
+      .filter((f) => f && f.ativo !== false);
 
-    let veioDeAnuncio = false;
-    if (fluxoAnuncio.ativo !== false) {
-      const gatilhosConfig = Array.isArray(fluxoAnuncio.gatilhos) && fluxoAnuncio.gatilhos.length > 0
-        ? fluxoAnuncio.gatilhos
-        : getPadraoFluxoAnuncio().gatilhos;
-
-      veioDeAnuncio = gatilhosConfig.some((gatilho) => {
+    let fluxoAcionado = null;
+    for (const fluxo of fluxosAtivos) {
+      const gatilhos = Array.isArray(fluxo.gatilhos) ? fluxo.gatilhos : [];
+      const match = gatilhos.some((gatilho) => {
         const gLimpo = String(gatilho || "").toLowerCase().trim();
         return gLimpo && texto.includes(gLimpo);
       });
+      if (match) {
+        fluxoAcionado = fluxo;
+        break;
+      }
     }
 
-    if (veioDeAnuncio) {
-      estadosConversa.set(msg.from, { etapa: "AGUARDANDO_DADOS_ORCAMENTO_ANUNCIO", timestamp: Date.now() });
+    if (fluxoAcionado) {
       const hora = new Date().getHours();
       let saudacao = "Olá";
       if (hora >= 5 && hora < 12) saudacao = "Bom dia";
       else if (hora >= 12 && hora < 18) saudacao = "Boa tarde";
       else saudacao = "Boa noite";
 
-      let templateMensagem = fluxoAnuncio.mensagem || getPadraoFluxoAnuncio().mensagem;
-      let msgAnuncio = templateMensagem.replace(/{saudacao}/gi, saudacao);
+      let nomeContato = "Cliente";
+      try {
+        const contact = await msg.getContact();
+        if (contact && (contact.name || contact.pushname)) {
+          nomeContato = contact.name || contact.pushname;
+        }
+      } catch (e) {}
 
-      await responder(msgAnuncio);
+      let templateMensagem = fluxoAcionado.mensagem || "";
+      let msgFormatada = templateMensagem
+        .replace(/{saudacao}/gi, saudacao)
+        .replace(/{nome}/gi, nomeContato);
+
+      console.log(`🎯 [Fluxo Acionado] "${fluxoAcionado.nome}" (Tipo: ${fluxoAcionado.tipoAcao || "QUESTIONARIO_ORCAMENTO"}) para ${msg.from}`);
+
+      // Executa de acordo com a ação do fluxo
+      if (fluxoAcionado.tipoAcao === "TRANSFERIR_HUMANO") {
+        registrarClienteAguardando(msg.from, nomeContato, fluxoAcionado.nome);
+        await responder(msgFormatada);
+        return;
+      }
+
+      if (fluxoAcionado.tipoAcao === "RESPOSTA_DIRETA") {
+        await responder(msgFormatada);
+        return;
+      }
+
+      // Padrão: QUESTIONARIO_ORCAMENTO
+      estadosConversa.set(msg.from, {
+        etapa: "AGUARDANDO_DADOS_ORCAMENTO_FLUXO",
+        fluxoId: fluxoAcionado.id,
+        origemLead: fluxoAcionado.origemLead || fluxoAcionado.nome,
+        timestamp: Date.now(),
+      });
+
+      await responder(msgFormatada);
       return;
     }
 
@@ -850,7 +964,74 @@ app.post("/api/config/notificacoes/test", async (req, res) => {
   }
 });
 
-// 1.4 Obter e Salvar Fluxo de Anúncios Personalizado
+// 1.4 Obter e Salvar Múltiplos Fluxos de Atendimento / Campanhas
+app.get("/api/config/fluxos", (req, res) => {
+  try {
+    const config = carregarConfigNotificacoes();
+    res.json({ success: true, fluxos: config.fluxos || getPadraoFluxos() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/config/fluxos", (req, res) => {
+  try {
+    const config = carregarConfigNotificacoes();
+    let novosFluxos = req.body;
+    if (novosFluxos && Array.isArray(novosFluxos.fluxos)) {
+      novosFluxos = novosFluxos.fluxos;
+    }
+    if (!Array.isArray(novosFluxos)) {
+      return res.status(400).json({ success: false, message: "Formato inválido. Esperado array de fluxos." });
+    }
+    config.fluxos = novosFluxos;
+    salvarConfigNotificacoes(config);
+    console.log(`💾 [Configurações] ${config.fluxos.length} fluxos de atendimento atualizados via painel admin!`);
+    res.json({ success: true, message: "Fluxos salvos com sucesso!", fluxos: config.fluxos });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 1.5 Alternar Ativo/Inativo de um Fluxo Rápido
+app.post("/api/config/fluxos/:id/toggle", (req, res) => {
+  try {
+    const id = req.params.id;
+    const config = carregarConfigNotificacoes();
+    const index = (config.fluxos || []).findIndex((f) => f.id === id);
+    if (index >= 0) {
+      config.fluxos[index].ativo = !config.fluxos[index].ativo;
+      salvarConfigNotificacoes(config);
+      console.log(`⚡ [Fluxo] Status do fluxo "${config.fluxos[index].nome}" alterado para ${config.fluxos[index].ativo ? "ATIVO" : "INATIVO"}`);
+      res.json({ success: true, message: `Fluxo ${config.fluxos[index].ativo ? "habilitado" : "desabilitado"} com sucesso!`, fluxo: config.fluxos[index], fluxos: config.fluxos });
+    } else {
+      res.status(404).json({ success: false, message: "Fluxo não encontrado." });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 1.6 Excluir Fluxo
+app.delete("/api/config/fluxos/:id", (req, res) => {
+  try {
+    const id = req.params.id;
+    const config = carregarConfigNotificacoes();
+    const index = (config.fluxos || []).findIndex((f) => f.id === id);
+    if (index >= 0) {
+      const removido = config.fluxos.splice(index, 1);
+      salvarConfigNotificacoes(config);
+      console.log(`🗑️ [Fluxo] Fluxo removido: ${removido[0]?.nome}`);
+      res.json({ success: true, message: "Fluxo excluído com sucesso!", fluxos: config.fluxos });
+    } else {
+      res.status(404).json({ success: false, message: "Fluxo não encontrado." });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 1.7 Obter e Salvar Fluxo de Anúncios (Legado / Compatibilidade)
 app.get("/api/config/fluxo-anuncio", (req, res) => {
   try {
     const config = carregarConfigNotificacoes();

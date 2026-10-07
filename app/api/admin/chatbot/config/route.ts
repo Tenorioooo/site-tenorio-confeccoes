@@ -31,7 +31,9 @@ export async function POST(req: NextRequest) {
       notificarAtendimentoHumano: body.notificarAtendimentoHumano !== false,
       notificarNovoOrcamento: body.notificarNovoOrcamento !== false,
       notificarPushWeb: body.notificarPushWeb !== false,
-      siteApiUrl: body.siteApiUrl || 'https://www.tenorioconfeccoes.shop/api/notifications/send'
+      siteApiUrl: body.siteApiUrl || 'https://www.tenorioconfeccoes.shop/api/notifications/send',
+      fluxoAnuncio: body.fluxoAnuncio || undefined,
+      fluxos: body.fluxos || undefined
     };
 
     await prisma.siteSetting.upsert({

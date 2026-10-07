@@ -2,5 +2,90 @@
   "adminPhone": "18991795656",
   "notificarAtendimentoHumano": true,
   "notificarNovoOrcamento": true,
-  "notificarPushWeb": true
+  "notificarPushWeb": true,
+  "fluxoAnuncio": {
+    "ativo": true,
+    "tituloCampanha": "Camisetas Esportivas / Interclasse",
+    "gatilhos": [
+      "vi o anuncio",
+      "vi o anúncio",
+      "vim pelo anuncio",
+      "vim pelo anúncio",
+      "anuncio do facebook",
+      "anúncio do facebook",
+      "anuncio do instagram",
+      "anúncio do instagram",
+      "anúncio",
+      "anuncio",
+      "interclasse",
+      "dry-fit",
+      "dry fit",
+      "dryfit",
+      "esportivo",
+      "camisa de time"
+    ],
+    "mensagem": "👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._"
+  },
+  "fluxos": [
+    {
+      "id": "fluxo-esportivo-ads",
+      "nome": "Campanha Meta Ads - Camisetas Esportivas / Interclasse",
+      "ativo": true,
+      "tipoAcao": "QUESTIONARIO_ORCAMENTO",
+      "gatilhos": [
+        "vi o anuncio",
+        "vi o anúncio",
+        "vim pelo anuncio",
+        "vim pelo anúncio",
+        "anuncio do facebook",
+        "anúncio do facebook",
+        "anuncio do instagram",
+        "anúncio do instagram",
+        "anúncio",
+        "anuncio",
+        "interclasse",
+        "dry-fit",
+        "dry fit",
+        "dryfit",
+        "esportivo",
+        "esportiva",
+        "camisa de time"
+      ],
+      "origemLead": "Meta Ads (Esportivo / Interclasse)",
+      "mensagem": "👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._"
+    },
+    {
+      "id": "fluxo-empresas",
+      "nome": "Campanha Corporativa - Uniformes para Empresas",
+      "ativo": true,
+      "tipoAcao": "QUESTIONARIO_ORCAMENTO",
+      "gatilhos": [
+        "uniforme para empresa",
+        "uniformes corporativos",
+        "uniforme de trabalho",
+        "polo bordada",
+        "camisa polo empresa",
+        "uniforme empresarial"
+      ],
+      "origemLead": "Campanha Empresas",
+      "mensagem": "👋 *{saudacao}! Muito bem-vindo(a) à Tenório Confecções!* 👔🏢\n\nCuidamos da identidade visual e uniformização da sua empresa com alta durabilidade e acabamento profissional.\n\n📋 *Para prepararmos sua proposta corporativa sob medida:*\n\n1️⃣ *Quais modelos você procura?* (Ex: Camisas Polo, Camisetas Algodão, Aventais, Jalecos)\n2️⃣ *Quantidade estimada de peças?* (Ex: 15, 30, 100 peças)\n3️⃣ *Sua empresa já possui o logotipo vetorizado ou em foto?*\n4️⃣ *Qual a sua cidade / estado?*\n\n✍️ *Pode responder nesta mesma mensagem* que nossa equipe/sistema já monta seu orçamento!"
+    },
+    {
+      "id": "fluxo-formandos",
+      "nome": "Campanha Estudantil - Formandos / Terceirão",
+      "ativo": false,
+      "tipoAcao": "QUESTIONARIO_ORCAMENTO",
+      "gatilhos": [
+        "terceirão",
+        "terceirao",
+        "camiseta de formandos",
+        "camisa de formando",
+        "nono ano",
+        "uniforme escolar",
+        "turma da faculdade"
+      ],
+      "origemLead": "Campanha Formandos / Terceirão",
+      "mensagem": "🎓 *{saudacao}! Parabéns pela formatura e reta final de estudos!* 🎉👕\n\nVamos produzir as camisetas/moletons da sua turma com o melhor acabamento e preço especial de atacado!\n\n📋 *Me conta rapidinho:*\n1️⃣ *Quantas peças/alunos são na turma?*\n2️⃣ *Qual o modelo preferido?* (Camiseta Tradicional 100% Algodão, Raglan, Dry-Fit ou Moletom)\n3️⃣ *Já têm o desenho/tema da turma ou querem auxílio para criar?*\n\n✍️ *Envie sua resposta aqui* que já passamos os valores especiais com desconto progressivo para a turma toda!"
+    }
+  ]
 }

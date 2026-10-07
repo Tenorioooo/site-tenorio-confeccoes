@@ -39,11 +39,18 @@ interface PricingTierItem {
   unitPrice: number;
 }
 
-interface FluxoAnuncioConfig {
+export type TipoAcaoFluxo = 'QUESTIONARIO_ORCAMENTO' | 'TRANSFERIR_HUMANO' | 'RESPOSTA_DIRETA';
+
+export interface FluxoItem {
+  id: string;
+  nome: string;
   ativo: boolean;
-  tituloCampanha: string;
+  tipoAcao: TipoAcaoFluxo;
   gatilhos: string[];
+  origemLead?: string;
   mensagem: string;
+  descricao?: string;
+  criadoEm?: string;
 }
 
 interface ProdutoTabela {
@@ -104,7 +111,7 @@ interface StatusResponse {
     notificarNovoOrcamento: boolean;
     notificarPushWeb: boolean;
     siteApiUrl: string;
-    fluxoAnuncio?: FluxoAnuncioConfig;
+    fluxos?: FluxoItem[];
   };
 }
 
@@ -128,35 +135,90 @@ export default function ChatbotAdminTab() {
   const [pushStatus, setPushStatus] = useState<'default' | 'granted' | 'denied' | 'unsupported'>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  // Configurações do Fluxo de Anúncios (ADS)
-  const [fluxoAnuncio, setFluxoAnuncio] = useState<FluxoAnuncioConfig>({
+  // ==========================================
+  // ESTADOS DO GERENCIADOR DE MÚLTIPLOS FLUXOS
+  // ==========================================
+  const [fluxos, setFluxos] = useState<FluxoItem[]>([
+    {
+      id: 'fluxo-esportivo-ads',
+      nome: 'Campanha Meta Ads - Camisetas Esportivas / Interclasse',
+      ativo: true,
+      tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+      gatilhos: [
+        'vi o anuncio',
+        'vi o anúncio',
+        'vim pelo anuncio',
+        'vim pelo anúncio',
+        'anuncio do facebook',
+        'anúncio do facebook',
+        'anuncio do instagram',
+        'anúncio do instagram',
+        'anúncio',
+        'anuncio',
+        'interclasse',
+        'dry-fit',
+        'dry fit',
+        'dryfit',
+        'esportivo',
+        'camisa de time'
+      ],
+      origemLead: 'Meta Ads (Esportivo / Interclasse)',
+      mensagem: `👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._`
+    },
+    {
+      id: 'fluxo-empresas',
+      nome: 'Campanha Corporativa - Uniformes para Empresas',
+      ativo: true,
+      tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+      gatilhos: [
+        'uniforme para empresa',
+        'uniformes corporativos',
+        'uniforme de trabalho',
+        'polo bordada',
+        'camisa polo empresa',
+        'uniforme empresarial'
+      ],
+      origemLead: 'Campanha Empresas',
+      mensagem: `👋 *{saudacao}! Muito bem-vindo(a) à Tenório Confecções!* 👔🏢\n\nCuidamos da identidade visual e uniformização da sua empresa com alta durabilidade e acabamento profissional.\n\n📋 *Para prepararmos sua proposta corporativa sob medida:*\n\n1️⃣ *Quais modelos você procura?* (Ex: Camisas Polo, Camisetas Algodão, Aventais, Jalecos)\n2️⃣ *Quantidade estimada de peças?* (Ex: 15, 30, 100 peças)\n3️⃣ *Sua empresa já possui o logotipo vetorizado ou em foto?*\n4️⃣ *Qual a sua cidade / estado?*\n\n✍️ *Pode responder nesta mesma mensagem* que nossa equipe/sistema já monta seu orçamento!`
+    },
+    {
+      id: 'fluxo-formandos',
+      nome: 'Campanha Estudantil - Formandos / Terceirão',
+      ativo: false,
+      tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+      gatilhos: [
+        'terceirão',
+        'terceirao',
+        'camiseta de formandos',
+        'camisa de formando',
+        'nono ano',
+        'uniforme escolar',
+        'turma da faculdade'
+      ],
+      origemLead: 'Campanha Formandos / Terceirão',
+      mensagem: `🎓 *{saudacao}! Parabéns pela formatura e reta final de estudos!* 🎉👕\n\nVamos produzir as camisetas/moletons da sua turma com o melhor acabamento e preço especial de atacado!\n\n📋 *Me conta rapidinho:*\n1️⃣ *Quantas peças/alunos são na turma?*\n2️⃣ *Qual o modelo preferido?* (Camiseta Tradicional 100% Algodão, Raglan, Dry-Fit ou Moletom)\n3️⃣ *Já têm o desenho/tema da turma ou querem auxílio para criar?*\n\n✍️ *Envie sua resposta aqui* que já passamos os valores especiais com desconto progressivo para a turma toda!`
+    }
+  ]);
+
+  // Filtro e Busca de Fluxos
+  const [buscaFluxo, setBuscaFluxo] = useState('');
+  const [filtroStatusFluxo, setFiltroStatusFluxo] = useState<'TODOS' | 'ATIVOS' | 'INATIVOS'>('TODOS');
+  const [simuladorTexto, setSimuladorTexto] = useState('');
+
+  // Modal de Criação / Edição de Fluxo
+  const [modalFluxoAberto, setModalFluxoAberto] = useState(false);
+  const [editingFluxoId, setEditingFluxoId] = useState<string | null>(null);
+  const [fluxoForm, setFluxoForm] = useState<FluxoItem>({
+    id: '',
+    nome: '',
     ativo: true,
-    tituloCampanha: 'Camisetas Esportivas / Interclasse',
-    gatilhos: [
-      'vi o anuncio',
-      'vi o anúncio',
-      'vim pelo anuncio',
-      'vim pelo anúncio',
-      'anuncio do facebook',
-      'anúncio do facebook',
-      'anuncio do instagram',
-      'anúncio do instagram',
-      'anúncio',
-      'anuncio',
-      'interclasse',
-      'dry-fit',
-      'dry fit',
-      'dryfit',
-      'esportivo',
-      'esportiva',
-      'uniforme esportivo',
-      'camisa de time',
-      'torcida'
-    ],
-    mensagem: `👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._`
+    tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+    gatilhos: [],
+    origemLead: '',
+    mensagem: '',
+    descricao: ''
   });
-  const [gatilhosInput, setGatilhosInput] = useState('');
-  const [novoGatilhoTexto, setNovoGatilhoTexto] = useState('');
+  const [novoGatilhoModal, setNovoGatilhoModal] = useState('');
 
   // Estados de edição de produto
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -208,15 +270,26 @@ export default function ChatbotAdminTab() {
     } catch (e) {}
   }, [botUrl]);
 
-  // Carregar configurações do fluxo de anúncios do robô
-  const carregarFluxoAnuncio = useCallback(async () => {
+  // Carregar lista de múltiplos fluxos do robô ou da base
+  const carregarFluxos = useCallback(async () => {
     try {
-      const res = await fetch(`${botUrl}/api/config/fluxo-anuncio`, { cache: 'no-store' });
+      const res = await fetch(`${botUrl}/api/config/fluxos`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
-        if (json.fluxoAnuncio) {
-          setFluxoAnuncio(json.fluxoAnuncio);
-          setGatilhosInput((json.fluxoAnuncio.gatilhos || []).join(', '));
+        if (Array.isArray(json.fluxos) && json.fluxos.length > 0) {
+          setFluxos(json.fluxos);
+          return;
+        }
+      }
+    } catch (e) {}
+
+    // Fallback: tentar carregar do backend Next.js
+    try {
+      const resSite = await fetch('/api/admin/chatbot/config', { cache: 'no-store' });
+      if (resSite.ok) {
+        const jsonSite = await resSite.json();
+        if (jsonSite?.config?.fluxos && Array.isArray(jsonSite.config.fluxos)) {
+          setFluxos(jsonSite.config.fluxos);
         }
       }
     } catch (e) {}
@@ -237,9 +310,8 @@ export default function ChatbotAdminTab() {
           setNotifHumano(cfg.notificarAtendimentoHumano !== false);
           setNotifOrcamento(cfg.notificarNovoOrcamento !== false);
           setNotifPush(cfg.notificarPushWeb !== false);
-          if (cfg.fluxoAnuncio) {
-            setFluxoAnuncio(cfg.fluxoAnuncio);
-            setGatilhosInput((cfg.fluxoAnuncio.gatilhos || []).join(', '));
+          if (Array.isArray(cfg.fluxos) && cfg.fluxos.length > 0) {
+            setFluxos(cfg.fluxos);
           }
         } else if (data.chatbot_admin_phone) {
           setAdminPhone(data.chatbot_admin_phone);
@@ -249,167 +321,257 @@ export default function ChatbotAdminTab() {
     } catch (e) {}
   }, []);
 
-  // Verificar suporte e status de Push no Navegador / iPhone
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!('serviceWorker' in navigator) || !('Notification' in window)) {
-        setPushStatus('unsupported');
-      } else {
-        setPushStatus(Notification.permission as any);
-        navigator.serviceWorker.ready.then((reg) => {
-          reg.pushManager.getSubscription().then((sub) => {
-            setIsSubscribed(!!sub);
-          });
-        });
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    carregarStatus();
-    carregarTabela();
-    carregarFluxoAnuncio();
-    carregarConfiguracoes();
-    const interval = setInterval(carregarStatus, 4000);
-    return () => clearInterval(interval);
-  }, [carregarStatus, carregarTabela, carregarFluxoAnuncio, carregarConfiguracoes]);
-
-  // Salvar Fluxo de Anúncios no Robô
-  const salvarFluxoAnuncio = async () => {
+  // Salvar Lista Completa de Fluxos (No Robô e no Banco de Dados)
+  const salvarTodosFluxos = async (novaListaFluxos?: FluxoItem[]) => {
+    const listaParaSalvar = novaListaFluxos || fluxos;
     try {
       setActionLoading(true);
-      const gatilhosArray = gatilhosInput
-        .split(',')
-        .map((g) => g.trim().toLowerCase())
-        .filter(Boolean);
 
-      const payload: FluxoAnuncioConfig = {
-        ...fluxoAnuncio,
-        gatilhos: gatilhosArray.length > 0 ? gatilhosArray : fluxoAnuncio.gatilhos
-      };
+      // 1. Salva no Robô (Porta 3001)
+      try {
+        await fetch(`${botUrl}/api/config/fluxos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fluxos: listaParaSalvar })
+        });
+      } catch (e) {}
 
-      const res = await fetch(`${botUrl}/api/config/fluxo-anuncio`, {
+      // 2. Salva no Banco de Dados / API do Painel
+      await fetch('/api/admin/chatbot/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          adminPhone,
+          notificarAtendimentoHumano: notifHumano,
+          notificarNovoOrcamento: notifOrcamento,
+          notificarPushWeb: notifPush,
+          fluxos: listaParaSalvar
+        })
       });
 
-      if (res.ok) {
-        toast.success('Fluxo de anúncio atualizado com sucesso no robô!');
-        setFluxoAnuncio(payload);
-      } else {
-        toast.error('Erro ao salvar fluxo no robô.');
-      }
-    } catch (e) {
-      toast.error('Erro ao conectar com o robô.');
+      setFluxos(listaParaSalvar);
+      toast.success('Todos os fluxos foram salvos e sincronizados com sucesso!');
+    } catch (e: any) {
+      toast.error('Erro ao sincronizar fluxos: ' + e.message);
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Adicionar e remover gatilhos de forma interativa
-  const adicionarGatilho = (novo?: string) => {
-    const limpo = (novo !== undefined ? novo : novoGatilhoTexto).trim().toLowerCase();
+  // Alternar Status Ativo / Inativo de um Fluxo com 1 Clique
+  const toggleFluxoAtivo = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const listaAtualizada = fluxos.map((f) => (f.id === id ? { ...f, ativo: !f.ativo } : f));
+    const fluxoAlterado = listaAtualizada.find((f) => f.id === id);
+    setFluxos(listaAtualizada);
+
+    toast.success(
+      fluxoAlterado?.ativo
+        ? `Fluxo "${fluxoAlterado.nome}" HABILITADO!`
+        : `Fluxo "${fluxoAlterado?.nome}" DESABILITADO!`
+    );
+
+    // Sincroniza em segundo plano
+    try {
+      fetch(`${botUrl}/api/config/fluxos/${id}/toggle`, { method: 'POST' }).catch(() => {});
+      fetch('/api/admin/chatbot/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fluxos: listaAtualizada })
+      }).catch(() => {});
+    } catch (err) {}
+  };
+
+  // Excluir Fluxo
+  const excluirFluxo = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const fluxo = fluxos.find((f) => f.id === id);
+    if (!confirm(`Deseja realmente excluir o fluxo "${fluxo?.nome || id}"?`)) return;
+
+    const listaAtualizada = fluxos.filter((f) => f.id !== id);
+    setFluxos(listaAtualizada);
+    toast.success(`Fluxo "${fluxo?.nome}" excluído!`);
+
+    try {
+      fetch(`${botUrl}/api/config/fluxos/${id}`, { method: 'DELETE' }).catch(() => {});
+      fetch('/api/admin/chatbot/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fluxos: listaAtualizada })
+      }).catch(() => {});
+    } catch (err) {}
+  };
+
+  // Duplicar Fluxo
+  const duplicarFluxo = (fluxo: FluxoItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const novoId = 'fluxo-' + Date.now();
+    const novoFluxo: FluxoItem = {
+      ...fluxo,
+      id: novoId,
+      nome: `${fluxo.nome} (Cópia)`,
+      ativo: false,
+      criadoEm: new Date().toISOString()
+    };
+    const listaAtualizada = [...fluxos, novoFluxo];
+    setFluxos(listaAtualizada);
+    toast.success(`Fluxo duplicado com sucesso!`);
+    salvarTodosFluxos(listaAtualizada);
+  };
+
+  // Abrir Modal de Criação de Novo Fluxo
+  const abrirCriarFluxo = (template?: Partial<FluxoItem>) => {
+    setEditingFluxoId(null);
+    setNovoGatilhoModal('');
+    setFluxoForm({
+      id: 'fluxo-' + Date.now(),
+      nome: template?.nome || '',
+      ativo: template?.ativo !== undefined ? template.ativo : true,
+      tipoAcao: template?.tipoAcao || 'QUESTIONARIO_ORCAMENTO',
+      gatilhos: template?.gatilhos ? [...template.gatilhos] : [],
+      origemLead: template?.origemLead || '',
+      mensagem: template?.mensagem || '',
+      descricao: template?.descricao || ''
+    });
+    setModalFluxoAberto(true);
+  };
+
+  // Abrir Modal de Edição de Fluxo Existente
+  const abrirEditarFluxo = (fluxo: FluxoItem) => {
+    setEditingFluxoId(fluxo.id);
+    setNovoGatilhoModal('');
+    setFluxoForm({
+      id: fluxo.id,
+      nome: fluxo.nome,
+      ativo: fluxo.ativo,
+      tipoAcao: fluxo.tipoAcao || 'QUESTIONARIO_ORCAMENTO',
+      gatilhos: [...(fluxo.gatilhos || [])],
+      origemLead: fluxo.origemLead || '',
+      mensagem: fluxo.mensagem,
+      descricao: fluxo.descricao || ''
+    });
+    setModalFluxoAberto(true);
+  };
+
+  // Adicionar Gatilho no Formulário do Modal
+  const adicionarGatilhoModal = (termoManual?: string) => {
+    const limpo = (termoManual !== undefined ? termoManual : novoGatilhoModal).trim().toLowerCase();
     if (!limpo) return;
-    if (fluxoAnuncio.gatilhos.includes(limpo)) {
-      toast.warning('Este gatilho já está na lista.');
+    if (fluxoForm.gatilhos.includes(limpo)) {
+      toast.warning('Este gatilho já foi adicionado a este fluxo.');
       return;
     }
-    const novosGatilhos = [...fluxoAnuncio.gatilhos, limpo];
-    setFluxoAnuncio({ ...fluxoAnuncio, gatilhos: novosGatilhos });
-    setGatilhosInput(novosGatilhos.join(', '));
-    setNovoGatilhoTexto('');
-    toast.success(`Gatilho "${limpo}" adicionado!`);
+    setFluxoForm({ ...fluxoForm, gatilhos: [...fluxoForm.gatilhos, limpo] });
+    setNovoGatilhoModal('');
   };
 
-  const removerGatilho = (gatilhoRemover: string) => {
-    const novosGatilhos = fluxoAnuncio.gatilhos.filter((g) => g !== gatilhoRemover);
-    setFluxoAnuncio({ ...fluxoAnuncio, gatilhos: novosGatilhos });
-    setGatilhosInput(novosGatilhos.join(', '));
+  // Remover Gatilho do Formulário
+  const removerGatilhoModal = (gatilhoRemover: string) => {
+    setFluxoForm({
+      ...fluxoForm,
+      gatilhos: fluxoForm.gatilhos.filter((g) => g !== gatilhoRemover)
+    });
   };
 
-  // Aplicar modelo pré-configurado
-  const aplicarTemplateAnuncio = (tipo: 'esportivo' | 'algodao' | 'corporativo' | 'terceirao') => {
-    if (tipo === 'esportivo') {
-      const template: FluxoAnuncioConfig = {
-        ativo: true,
-        tituloCampanha: 'Camisetas Esportivas / Interclasse',
-        gatilhos: [
-          'vi o anuncio',
-          'vi o anúncio',
-          'vim pelo anuncio',
-          'vim pelo anúncio',
-          'anuncio do facebook',
-          'anúncio do facebook',
-          'anuncio do instagram',
-          'anúncio do instagram',
-          'anúncio',
-          'anuncio',
-          'interclasse',
-          'dry-fit',
-          'dry fit',
-          'dryfit',
-          'esportivo',
-          'esportiva',
-          'uniforme esportivo',
-          'camisa de time',
-          'torcida'
-        ],
-        mensagem: `👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._`
-      };
-      setFluxoAnuncio(template);
-      setGatilhosInput(template.gatilhos.join(', '));
-      toast.success('Modelo de Camisetas Esportivas aplicado!');
-    } else if (tipo === 'algodao') {
-      const template: FluxoAnuncioConfig = {
-        ativo: true,
-        tituloCampanha: 'Camisetas 100% Algodão Premium',
-        gatilhos: [
-          'vi o anuncio de camiseta',
-          'anuncio camiseta algodao',
-          'anuncio algodao',
-          'promoção camiseta',
-          'promocao camiseta',
-          'camiseta personalizada algodao'
-        ],
-        mensagem: `👋 *{saudacao}! Seja muito bem-vindo(a) à Tenório Confecções!* 🧵✨\n\nVi que você tem interesse nas nossas *Camisetas 100% Algodão Premium*!\n\n📋 *Para eu montar seu orçamento com as melhores condições, me conta:* \n\n1️⃣ *Quantas camisetas você precisa aproximadamente?* (Ex: 10, 20, 50, 100+ un)\n2️⃣ *Qual a cor principal desejada?* (Ex: Branca, Preta, Colorida)\n3️⃣ *Para qual finalidade?* (Ex: Evento, Marca própria, Empresa, Presente)\n4️⃣ *Já possui a estampa/arte pronta?* (Sim / Não / Pode enviar aqui)\n5️⃣ *Qual o prazo que precisa das peças?*\n\n✍️ *Envie suas respostas aqui em uma única mensagem* que já calculamos o seu valor! 🚀`
-      };
-      setFluxoAnuncio(template);
-      setGatilhosInput(template.gatilhos.join(', '));
-      toast.success('Modelo de Camisetas de Algodão aplicado!');
-    } else if (tipo === 'corporativo') {
-      const template: FluxoAnuncioConfig = {
-        ativo: true,
-        tituloCampanha: 'Uniformes Corporativos & Polos',
-        gatilhos: [
-          'anuncio uniforme empresa',
-          'anuncio camisa polo',
-          'anuncio corporativo',
-          'uniforme empresarial',
-          'polo bordada'
-        ],
-        mensagem: `👋 *{saudacao}! Seja bem-vindo(a) à Tenório Confecções!* 👔💼\n\nEspecialistas em *Uniformes Corporativos de Alta Durabilidade* (Polos Piquet, Camisas Sociais, Moletons e Jalecos com Bordado Computadorizado).\n\n📋 *Para montarmos a proposta comercial para sua empresa:* \n\n1️⃣ *Qual modelo de uniforme?* (Ex: Camisa Polo Piquet, Camiseta Algodão, Colete)\n2️⃣ *Qual a quantidade estimada?* (Ex: 15, 30, 60 peças)\n3️⃣ *Nome da sua empresa / cidade:*\n4️⃣ *Deseja logotipo bordado ou estampado?* (Bordado / Silk / DTF)\n5️⃣ *Qual o prazo desejado para entrega?*\n\n✍️ *Envie essas informações* para enviarmos sua cotação formalizada! 🚀`
-      };
-      setFluxoAnuncio(template);
-      setGatilhosInput(template.gatilhos.join(', '));
-      toast.success('Modelo Corporativo aplicado!');
-    } else if (tipo === 'terceirao') {
-      const template: FluxoAnuncioConfig = {
-        ativo: true,
-        tituloCampanha: 'Terceirão & Formaturas',
-        gatilhos: [
-          'anuncio terceirao',
-          'anúncio terceirão',
-          'camisa terceirao',
-          'moletom terceirao',
-          'interclasse formatura'
-        ],
-        mensagem: `👋 *{saudacao}! Fala terceirão, tudo bem?* 🎓✨🏆\n\nBora fazer o manto da formatura / terceirão mais pesado da escola!\n\n📋 *Para eu calcular os valores com desconto de turma, me responde rapidinho:* \n\n1️⃣ *Qual peça a turma quer fazer?* (Ex: Camiseta 100% Algodão, Moletom Canguru com Capuz, Corta-Vento)\n2️⃣ *Quantos alunos na turma aproximadamente?* (Ex: 25, 40, 60 pessoas)\n3️⃣ *Nome da escola / cidade:*\n4️⃣ *Já têm o desenho/tema ou querem que a gente crie o layout virtual?*\n5️⃣ *Vai ter nome e número de cada formando?* (Sim / Não)\n\n✍️ *Manda aqui em uma única mensagem* que já calculamos a cotação por aluno! 🚀`
-      };
-      setFluxoAnuncio(template);
-      setGatilhosInput(template.gatilhos.join(', '));
-      toast.success('Modelo de Terceirão aplicado!');
+  // Salvar Fluxo do Modal
+  const salvarFluxoFormModal = () => {
+    if (!fluxoForm.nome.trim()) {
+      toast.error('Informe o nome do fluxo / campanha.');
+      return;
     }
+    if (fluxoForm.gatilhos.length === 0) {
+      toast.error('Adicione pelo menos 1 palavra-chave gatilho para acionar este fluxo.');
+      return;
+    }
+    if (!fluxoForm.mensagem.trim()) {
+      toast.error('Informe a mensagem de resposta que o robô enviará.');
+      return;
+    }
+
+    let novaLista: FluxoItem[];
+    if (editingFluxoId) {
+      novaLista = fluxos.map((f) => (f.id === editingFluxoId ? { ...fluxoForm } : f));
+      toast.success(`Fluxo "${fluxoForm.nome}" atualizado!`);
+    } else {
+      novaLista = [...fluxos, { ...fluxoForm, id: fluxoForm.id || 'fluxo-' + Date.now() }];
+      toast.success(`Novo fluxo "${fluxoForm.nome}" criado com sucesso!`);
+    }
+
+    setFluxos(novaLista);
+    setModalFluxoAberto(false);
+    salvarTodosFluxos(novaLista);
+  };
+
+  // Modelos de 1 clique para preencher o formulário
+  const aplicarTemplateNoForm = (tipo: 'esportivo' | 'algodao' | 'corporativo' | 'terceirao' | 'eventos' | 'humano') => {
+    if (tipo === 'esportivo') {
+      setFluxoForm({
+        ...fluxoForm,
+        nome: 'Campanha Meta Ads - Camisetas Esportivas / Interclasse',
+        tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+        origemLead: 'Meta Ads (Esportivo / Interclasse)',
+        gatilhos: ['vi o anuncio', 'vim pelo anuncio', 'anuncio instagram', 'interclasse', 'dry-fit', 'camisa de time', 'esportivo'],
+        mensagem: `👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._`
+      });
+    } else if (tipo === 'corporativo') {
+      setFluxoForm({
+        ...fluxoForm,
+        nome: 'Campanha Corporativa - Uniformes para Empresas',
+        tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+        origemLead: 'Campanha Empresas & B2B',
+        gatilhos: ['uniforme para empresa', 'uniforme corporativo', 'polo bordada', 'camisa polo empresa', 'uniforme empresarial'],
+        mensagem: `👋 *{saudacao}! Muito bem-vindo(a) à Tenório Confecções!* 👔🏢\n\nCuidamos da identidade visual e uniformização da sua equipe com alta durabilidade e acabamento profissional.\n\n📋 *Para prepararmos sua proposta comercial sob medida:*\n\n1️⃣ *Quais modelos você procura?* (Ex: Camisas Polo Piquet, Camisetas Algodão, Aventais, Jalecos)\n2️⃣ *Quantidade estimada de peças?* (Ex: 15, 30, 60, 100+ peças)\n3️⃣ *Sua empresa já possui o logotipo vetorizado ou em foto?*\n4️⃣ *Deseja logotipo bordado ou estampado?*\n5️⃣ *Qual a sua cidade / estado?*\n\n✍️ *Envie essas informações* para montarmos sua proposta na hora!`
+      });
+    } else if (tipo === 'algodao') {
+      setFluxoForm({
+        ...fluxoForm,
+        nome: 'Campanha Promocional - Camisetas 100% Algodão',
+        tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+        origemLead: 'Campanha Algodão',
+        gatilhos: ['camiseta de algodao', 'camiseta personalizada', 'promocao camiseta', 'camisa 100% algodao', 'marca propria'],
+        mensagem: `👋 *{saudacao}! Seja muito bem-vindo(a) à Tenório Confecções!* 🧵✨\n\nVi que você tem interesse nas nossas *Camisetas 100% Algodão Premium* (fio 30.1 penteado)!\n\n📋 *Para eu calcular seu orçamento com as melhores condições:*\n\n1️⃣ *Quantas camisetas você precisa aproximadamente?* (Ex: 10, 20, 50, 100 peças)\n2️⃣ *Qual a cor principal desejada?* (Ex: Branca, Preta, Colorida)\n3️⃣ *Para qual finalidade?* (Ex: Evento, Marca própria, Uniforme, Presente)\n4️⃣ *Já possui a estampa/arte pronta?* (Sim / Não / Pode enviar aqui)\n5️⃣ *Qual o prazo estimado que precisa das peças?*\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀`
+      });
+    } else if (tipo === 'terceirao') {
+      setFluxoForm({
+        ...fluxoForm,
+        nome: 'Campanha Estudantil - Terceirão & Formandos',
+        tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+        origemLead: 'Campanha Terceirão / Formaturas',
+        gatilhos: ['terceirao', 'terceirão', 'camisa de formando', 'moletom terceirao', 'formatura', 'nono ano'],
+        mensagem: `🎓 *{saudacao}! Fala terceirão, tudo bem?* 🎉👕🏆\n\nBora fazer o manto da formatura / terceirão mais top da escola!\n\n📋 *Para eu calcular os valores especiais com desconto progressivo para a turma:*\n\n1️⃣ *Qual peça a turma quer produzir?* (Ex: Camiseta Algodão, Moletom Canguru com Capuz, Corta-Vento, Raglan)\n2️⃣ *Quantos alunos na turma aproximadamente?* (Ex: 25, 40, 60 pessoas)\n3️⃣ *Nome da escola / cidade:*\n4️⃣ *Já têm o desenho/tema ou querem auxílio para criar o layout virtual?*\n5️⃣ *Vai ter nome e número de cada formando?* (Sim / Não)\n\n✍️ *Mande aqui* que já calculamos a cotação por aluno com condições facilitadas!`
+      });
+    } else if (tipo === 'eventos') {
+      setFluxoForm({
+        ...fluxoForm,
+        nome: 'Campanha Eventos - Congressos, Igrejas & Blocos',
+        tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+        origemLead: 'Campanha Eventos & Congressos',
+        gatilhos: ['camisa de evento', 'camiseta para igreja', 'congresso', 'bloco', 'retiro', 'camiseta corrida'],
+        mensagem: `👋 *{saudacao}! Tudo bem? Que alegria receber você!* 🌟👕\n\nSomos especialistas em camisetas e abadás para grandes eventos, retiros, congressos e corridas com entrega rápida e preço imbatível de atacado!\n\n📋 *Para calcularmos sua cotação:*\n\n1️⃣ *Qual a quantidade estimada de peças?* (Ex: 30, 50, 100, 300+ peças)\n2️⃣ *Qual o tecido de preferência?* (Algodão, Dry-Fit ou Poliviscose)\n3️⃣ *Para qual data é o seu evento?*\n4️⃣ *Já possuem a arte da estampa?*\n\n✍️ *Envie sua resposta* que já passamos o valor com tabela de desconto de atacado!`
+      });
+    } else if (tipo === 'humano') {
+      setFluxoForm({
+        ...fluxoForm,
+        nome: 'Atendimento Prioritário - Direto com Atendente',
+        tipoAcao: 'TRANSFERIR_HUMANO',
+        origemLead: 'Fila de Atendimento Humano',
+        gatilhos: ['falar com atendente', 'quero falar com humano', 'falar com vendedor', 'urgente', 'suporte humano'],
+        mensagem: `👋 *{saudacao}! Com certeza!* 👤✨\n\nJá transferi seu contato com prioridade para um de nossos especialistas em atendimento.\n\n⏳ Em instantes nossa equipe vai te responder por aqui mesmo. Se quiser já adiantar sua dúvida ou pedido, sinta-se à vontade para escrever abaixo!`
+      });
+    }
+  };
+
+  // Testar qual fluxo seria disparado pelo texto digitado no simulador
+  const obterFluxoSimulado = (texto: string) => {
+    if (!texto.trim()) return null;
+    const tLimpo = texto.toLowerCase().trim();
+    for (const fluxo of fluxos) {
+      const match = fluxo.gatilhos.some((g) => g && tLimpo.includes(g.toLowerCase().trim()));
+      if (match) {
+        return fluxo;
+      }
+    }
+    return null;
   };
 
   // Função auxiliar para conversão de chave VAPID no padrão iOS/Safari
@@ -880,15 +1042,15 @@ export default function ChatbotAdminTab() {
             onClick={() => setActiveTab('anuncio')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               activeTab === 'anuncio'
-                ? 'bg-pink-600 text-white shadow-lg shadow-pink-600/20'
+                ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg shadow-pink-600/25'
                 : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
             <Megaphone className="h-4 w-4 text-pink-300" />
-            Fluxo Anúncios (ADS)
-            {fluxoAnuncio.ativo && (
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            )}
+            Fluxos & Campanhas
+            <span className="ml-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">
+              {fluxos.filter((f) => f.ativo).length} ativos
+            </span>
           </button>
 
           <button
@@ -1088,361 +1250,426 @@ export default function ChatbotAdminTab() {
         </div>
       )}
 
-      {/* ABA: FLUXO DE ANÚNCIOS (ADS / FACEBOOK / INSTAGRAM) */}
+      {/* ABA: GERENCIADOR DE MÚLTIPLOS FLUXOS & CAMPANHAS */}
       {activeTab === 'anuncio' && (
         <div className="space-y-6">
-          {/* HEADER DA CAMPANHA & STATUS */}
+          {/* HEADER PRINCIPAL & AÇÕES GERAIS */}
           <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-sm space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400 shadow-lg shadow-pink-500/10">
                   <Megaphone className="h-6 w-6" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                    Fluxo de Entrada para Anúncios (ADS)
-                    {fluxoAnuncio.ativo ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        Ativo
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                        Desativado
-                      </span>
-                    )}
+                    Gerenciador de Fluxos & Campanhas
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                      {fluxos.length} cadastrados
+                    </span>
                   </h2>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Configure as mensagens automáticas e perguntas de qualificação quando o cliente vier de campanhas do Facebook, Instagram ou WhatsApp.
+                    Crie e personalize múltiplos fluxos de qualificação, integre com anúncios e ative ou desative cada fluxo com 1 clique.
                   </p>
                 </div>
               </div>
 
-              {/* TOGGLE STATUS & SALVAR */}
-              <div className="flex items-center gap-3">
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={fluxoAnuncio.ativo}
-                    onChange={(e) => setFluxoAnuncio({ ...fluxoAnuncio, ativo: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div>
-                  <span className="ml-3 text-xs font-medium text-slate-300">
-                    {fluxoAnuncio.ativo ? 'Fluxo Habilitado' : 'Fluxo Desabilitado'}
-                  </span>
-                </label>
+              {/* BOTÕES DE AÇÃO: NOVO FLUXO E SALVAR TODOS */}
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => abrirCriarFluxo()}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white flex items-center gap-2 shadow-lg shadow-pink-600/25 transition"
+                >
+                  <Plus className="h-4 w-4" />
+                  Novo Fluxo
+                </button>
 
                 <button
-                  onClick={salvarFluxoAnuncio}
+                  type="button"
+                  onClick={() => salvarTodosFluxos()}
                   disabled={actionLoading}
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-pink-600 hover:bg-pink-500 text-white flex items-center gap-2 shadow-lg shadow-pink-600/25 transition disabled:opacity-50"
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-2 border border-slate-700 transition disabled:opacity-50"
                 >
-                  {actionLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Salvar Fluxo
+                  {actionLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 text-emerald-400" />}
+                  Salvar Alterações
                 </button>
               </div>
             </div>
 
-            {/* MODELOS RÁPIDOS / TEMPLATES */}
+            {/* MINI METRICAS DOS FLUXOS */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-800/80">
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800/60">
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total de Fluxos</p>
+                <p className="text-xl font-bold text-slate-100 mt-0.5">{fluxos.length}</p>
+              </div>
+
+              <div className="p-3 bg-emerald-950/20 rounded-xl border border-emerald-900/30">
+                <p className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Fluxos Habilitados</p>
+                <p className="text-xl font-bold text-emerald-400 mt-0.5">{fluxos.filter((f) => f.ativo).length}</p>
+              </div>
+
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800/60">
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Fluxos Desabilitados</p>
+                <p className="text-xl font-bold text-slate-400 mt-0.5">{fluxos.filter((f) => !f.ativo).length}</p>
+              </div>
+
+              <div className="p-3 bg-blue-950/20 rounded-xl border border-blue-900/30">
+                <p className="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Gatilhos Monitorados</p>
+                <p className="text-xl font-bold text-blue-400 mt-0.5">
+                  {fluxos.reduce((acc, f) => acc + (Array.isArray(f.gatilhos) ? f.gatilhos.length : 0), 0)}
+                </p>
+              </div>
+            </div>
+
+            {/* MODELOS PRONTOS DE 1 CLIQUE PARA CRIAR NOVO FLUXO */}
             <div className="pt-2 border-t border-slate-800/80">
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-3">
                 <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                Carregar Modelo Pré-Configurado (1 Clique)
+                Criar a partir de Modelo Pronto (1 Clique)
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <button
                   type="button"
-                  onClick={() => aplicarTemplateAnuncio('esportivo')}
-                  className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group"
+                  onClick={() => abrirCriarFluxo({
+                    nome: 'Campanha Meta Ads - Camisetas Esportivas / Interclasse',
+                    tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+                    origemLead: 'Meta Ads (Esportivo / Interclasse)',
+                    gatilhos: ['vi o anuncio', 'vim pelo anuncio', 'anuncio instagram', 'interclasse', 'dry-fit', 'camisa de time', 'esportivo'],
+                    mensagem: `👋 *{saudacao}! Que massa ter você por aqui!* 🏆⚽👕\n\nBora montar o uniforme/camisetas personalizadas do seu time ou evento!\n\n📋 *Para eu calcular o valor certinho para você agora mesmo, me conta rapidinho:* \n\n1️⃣ *Qual modelo você procura?* (Ex: Camiseta Dry-Fit manga curta ou Conjunto Camisa + Calção)\n2️⃣ *Quantas peças você precisa aproximadamente?* (Ex: 10, 20, 50 peças)\n3️⃣ *Para qual time ou evento?* (Ex: Interclasse, Time de Futebol/Vôlei, Corrida, Empresa, Academia)\n4️⃣ *Já tem a arte ou logotipo?* (Sim / Não / Pode mandar a foto aqui)\n5️⃣ *Vai querer Nome e Número individual em cada peça?* (Sim / Não)\n\n✍️ *Pode responder tudo junto em uma mensagem* que já calculamos sua cotação na hora! 🚀\n\n_Se preferir ver outras opções, digite *menu* a qualquer momento._`
+                  })}
+                  className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group flex items-start justify-between"
                 >
-                  <p className="text-sm font-semibold text-slate-200 group-hover:text-pink-400 flex items-center gap-2">
-                    ⚽ Esportivo / Interclasse
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Dry-Fit, fardamentos, numeração individual e eventos esportivos.
-                  </p>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-200 group-hover:text-pink-400 flex items-center gap-1.5">
+                      ⚽ Esportivo / Interclasse
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Dry-Fit, fardamentos, numeração individual e eventos.
+                    </p>
+                  </div>
+                  <Plus className="h-4 w-4 text-slate-500 group-hover:text-pink-400 mt-0.5" />
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => aplicarTemplateAnuncio('algodao')}
-                  className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group"
+                  onClick={() => abrirCriarFluxo({
+                    nome: 'Campanha Corporativa - Uniformes para Empresas',
+                    tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+                    origemLead: 'Campanha Empresas & B2B',
+                    gatilhos: ['uniforme para empresa', 'uniforme corporativo', 'polo bordada', 'camisa polo empresa', 'uniforme empresarial'],
+                    mensagem: `👋 *{saudacao}! Muito bem-vindo(a) à Tenório Confecções!* 👔🏢\n\nCuidamos da identidade visual e uniformização da sua equipe com alta durabilidade e acabamento profissional.\n\n📋 *Para prepararmos sua proposta comercial sob medida:*\n\n1️⃣ *Quais modelos você procura?* (Ex: Camisas Polo Piquet, Camisetas Algodão, Aventais, Jalecos)\n2️⃣ *Quantidade estimada de peças?* (Ex: 15, 30, 60, 100+ peças)\n3️⃣ *Sua empresa já possui o logotipo vetorizado ou em foto?*\n4️⃣ *Deseja logotipo bordado ou estampado?*\n5️⃣ *Qual a sua cidade / estado?*\n\n✍️ *Envie essas informações* para montarmos sua proposta na hora!`
+                  })}
+                  className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group flex items-start justify-between"
                 >
-                  <p className="text-sm font-semibold text-slate-200 group-hover:text-pink-400 flex items-center gap-2">
-                    👕 100% Algodão Premium
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Camisetas personalizadas, marcas próprias e eventos.
-                  </p>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-200 group-hover:text-pink-400 flex items-center gap-1.5">
+                      👔 Uniformes Corporativos & Polos
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Polos bordadas, camisas para empresas e B2B.
+                    </p>
+                  </div>
+                  <Plus className="h-4 w-4 text-slate-500 group-hover:text-pink-400 mt-0.5" />
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => aplicarTemplateAnuncio('corporativo')}
-                  className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group"
+                  onClick={() => abrirCriarFluxo({
+                    nome: 'Campanha Estudantil - Terceirão & Formandos',
+                    tipoAcao: 'QUESTIONARIO_ORCAMENTO',
+                    origemLead: 'Campanha Terceirão / Formaturas',
+                    gatilhos: ['terceirao', 'terceirão', 'camisa de formando', 'moletom terceirao', 'formatura', 'nono ano'],
+                    mensagem: `🎓 *{saudacao}! Fala terceirão, tudo bem?* 🎉👕🏆\n\nBora fazer o manto da formatura / terceirão mais top da escola!\n\n📋 *Para eu calcular os valores especiais com desconto progressivo para a turma:*\n\n1️⃣ *Qual peça a turma quer produzir?* (Ex: Camiseta Algodão, Moletom Canguru com Capuz, Corta-Vento, Raglan)\n2️⃣ *Quantos alunos na turma aproximadamente?* (Ex: 25, 40, 60 pessoas)\n3️⃣ *Nome da escola / cidade:*\n4️⃣ *Já têm o desenho/tema ou querem auxílio para criar o layout virtual?*\n5️⃣ *Vai ter nome e número de cada formando?* (Sim / Não)\n\n✍️ *Mande aqui* que já calculamos a cotação por aluno com condições facilitadas!`
+                  })}
+                  className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group flex items-start justify-between"
                 >
-                  <p className="text-sm font-semibold text-slate-200 group-hover:text-pink-400 flex items-center gap-2">
-                    👔 Corporativo & Polos
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Polos bordadas, uniformes de empresas e atendimento B2B.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => aplicarTemplateAnuncio('terceirao')}
-                  className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group"
-                >
-                  <p className="text-sm font-semibold text-slate-200 group-hover:text-pink-400 flex items-center gap-2">
-                    🎓 Terceirão & Turmas
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Moletons, camisetas de formatura e interclasses escolares.
-                  </p>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-200 group-hover:text-pink-400 flex items-center gap-1.5">
+                      🎓 Terceirão & Formandos
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Moletons, camisetas de turma e formaturas escolares.
+                    </p>
+                  </div>
+                  <Plus className="h-4 w-4 text-slate-500 group-hover:text-pink-400 mt-0.5" />
                 </button>
               </div>
             </div>
           </div>
 
-          {/* PALAVRAS-CHAVE GATILHOS */}
-          <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-sm space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                <Send className="h-4 w-4 text-blue-400" />
-                Gatilhos de Ativação Automática (Palavras e Frases)
+          {/* SIMULADOR DE GATILHOS AO VIVO */}
+          <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800/80 backdrop-blur-sm space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                <Send className="h-4 w-4 text-pink-400" />
+                Simulador de Disparo de Fluxos em Tempo Real
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Se a primeira mensagem do cliente contiver qualquer uma dessas palavras, o robô ativará este fluxo personalizado automaticamente.
-              </p>
+              <span className="text-[11px] text-slate-400">
+                Teste qualquer frase que um cliente enviaria no WhatsApp
+              </span>
             </div>
 
-            {/* TAGS ATUAIS */}
-            <div className="flex flex-wrap gap-2 p-3 bg-slate-950/70 border border-slate-800 rounded-xl min-h-[52px] items-center">
-              {fluxoAnuncio.gatilhos.length === 0 ? (
-                <span className="text-xs text-slate-500 italic">Nenhum gatilho cadastrado. Adicione abaixo.</span>
-              ) : (
-                fluxoAnuncio.gatilhos.map((gatilho, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20 group hover:border-rose-500/40"
-                  >
-                    {gatilho}
-                    <button
-                      type="button"
-                      onClick={() => removerGatilho(gatilho)}
-                      className="text-slate-400 hover:text-rose-400 transition"
-                      title="Remover gatilho"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))
+            <div className="relative">
+              <input
+                type="text"
+                value={simuladorTexto}
+                onChange={(e) => setSimuladorTexto(e.target.value)}
+                placeholder="Digite aqui para testar: ex: Olá, vim pelo anúncio de dry-fit | quero uniforme pra minha empresa..."
+                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-pink-500 pr-10 font-medium"
+              />
+              {simuladorTexto && (
+                <button
+                  type="button"
+                  onClick={() => setSimuladorTexto('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               )}
             </div>
 
-            {/* ADICIONAR NOVO GATILHO */}
-            <div className="flex gap-2">
+            {/* RESULTADO DA SIMULAÇÃO */}
+            {simuladorTexto.trim() && (
+              <div className="mt-2">
+                {(() => {
+                  const fluxoMatch = obterFluxoSimulado(simuladorTexto);
+                  if (fluxoMatch) {
+                    return (
+                      <div className={`p-4 rounded-xl border ${fluxoMatch.ativo ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300' : 'bg-rose-950/30 border-rose-500/40 text-rose-300'} space-y-2`}>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold flex items-center gap-2">
+                            {fluxoMatch.ativo ? (
+                              <>
+                                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                                <span>Fluxo Acionado com Sucesso: <strong>{fluxoMatch.nome}</strong></span>
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="h-4 w-4 text-rose-400" />
+                                <span>Fluxo Detectado porém <strong>DESABILITADO</strong>: {fluxoMatch.nome} (O bot cairá no menu padrão)</span>
+                              </>
+                            )}
+                          </p>
+                          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${fluxoMatch.ativo ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}`}>
+                            {fluxoMatch.ativo ? 'Habilitado' : 'Desabilitado'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300">
+                          <strong>Ação:</strong> {fluxoMatch.tipoAcao === 'QUESTIONARIO_ORCAMENTO' ? '🎯 Questionário de Orçamento Automático' : fluxoMatch.tipoAcao === 'TRANSFERIR_HUMANO' ? '👤 Transferência Imediata para Atendente Humano' : '💬 Resposta Rápida Direta'}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-400 flex items-center gap-2">
+                      <HelpCircle className="h-4 w-4 text-slate-500" />
+                      Nenhum fluxo customizado foi acionado para essa mensagem. O robô responderá com o <strong>Menu Principal Padrão</strong> ou <strong>Cálculo Direto de Orçamento</strong>.
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
+          {/* BARRA DE FILTROS E BUSCA */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
-                value={novoGatilhoTexto}
-                onChange={(e) => setNovoGatilhoTexto(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    adicionarGatilho();
-                  }
-                }}
-                placeholder="Ex: vi no insta, vi o anúncio, quero fazer camisa de time..."
-                className="flex-1 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-pink-500"
+                value={buscaFluxo}
+                onChange={(e) => setBuscaFluxo(e.target.value)}
+                placeholder="Buscar por nome ou gatilho..."
+                className="w-full bg-slate-900/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-pink-500"
               />
+            </div>
+
+            <div className="flex items-center gap-1.5 self-end sm:self-auto bg-slate-900/80 p-1 rounded-xl border border-slate-800">
               <button
                 type="button"
-                onClick={() => adicionarGatilho()}
-                className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-1.5 transition"
+                onClick={() => setFiltroStatusFluxo('TODOS')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  filtroStatusFluxo === 'TODOS'
+                    ? 'bg-pink-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
               >
-                <Plus className="h-3.5 w-3.5" />
-                Adicionar Gatilho
+                Todos ({fluxos.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltroStatusFluxo('ATIVOS')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  filtroStatusFluxo === 'ATIVOS'
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Habilitados ({fluxos.filter((f) => f.ativo).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltroStatusFluxo('INATIVOS')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  filtroStatusFluxo === 'INATIVOS'
+                    ? 'bg-slate-700 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Desabilitados ({fluxos.filter((f) => !f.ativo).length})
               </button>
             </div>
           </div>
 
-          {/* GRID: EDITOR DE MENSAGEM & PREVIEW DO WHATSAPP */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* COLUNA ESQUERDA: EDITOR */}
-            <div className="lg:col-span-7 bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <Edit2 className="h-4 w-4 text-pink-400" />
-                    Editor da Mensagem do Robô
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Personalize o texto, emojis e as perguntas enviadas para o cliente.
-                  </p>
-                </div>
+          {/* LISTA DE CARDS DE FLUXOS */}
+          <div className="space-y-4">
+            {fluxos
+              .filter((fluxo) => {
+                if (filtroStatusFluxo === 'ATIVOS' && !fluxo.ativo) return false;
+                if (filtroStatusFluxo === 'INATIVOS' && fluxo.ativo) return false;
+                if (!buscaFluxo.trim()) return true;
+                const b = buscaFluxo.toLowerCase().trim();
+                const matchNome = fluxo.nome.toLowerCase().includes(b);
+                const matchGatilho = (fluxo.gatilhos || []).some((g) => g.toLowerCase().includes(b));
+                const matchLead = (fluxo.origemLead || '').toLowerCase().includes(b);
+                return matchNome || matchGatilho || matchLead;
+              })
+              .map((fluxo) => (
+                <div
+                  key={fluxo.id}
+                  className={`bg-slate-900/70 p-5 rounded-2xl border transition-all ${
+                    fluxo.ativo
+                      ? 'border-slate-800 hover:border-pink-500/40 shadow-lg shadow-black/20'
+                      : 'border-slate-800/40 opacity-75 hover:opacity-100 bg-slate-950/40'
+                  }`}
+                >
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800/60">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                          {fluxo.nome}
+                        </h3>
 
+                        {/* BADGE DE TIPO DE AÇÃO */}
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
+                          {fluxo.tipoAcao === 'QUESTIONARIO_ORCAMENTO' ? '🎯 Orçamento Automático' : fluxo.tipoAcao === 'TRANSFERIR_HUMANO' ? '👤 Transferir Humano' : '💬 Resposta Direta'}
+                        </span>
+
+                        {fluxo.origemLead && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-slate-400 bg-slate-800 border border-slate-700">
+                            Origem: {fluxo.origemLead}
+                          </span>
+                        )}
+                      </div>
+
+                      {fluxo.descricao && (
+                        <p className="text-xs text-slate-400">{fluxo.descricao}</p>
+                      )}
+                    </div>
+
+                    {/* CONTROLES: TOGGLE HABILITADO / DESABILITADO + AÇÕES */}
+                    <div className="flex items-center gap-3">
+                      {/* TOGGLE SWITCH RÁPIDO */}
+                      <div className="flex items-center gap-2.5 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800">
+                        <span className={`text-xs font-semibold ${fluxo.ativo ? 'text-emerald-400' : 'text-slate-400'}`}>
+                          {fluxo.ativo ? 'Habilitado' : 'Desabilitado'}
+                        </span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={fluxo.ativo}
+                            onChange={(e) => toggleFluxoAtivo(fluxo.id, e as any)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                      </div>
+
+                      {/* BOTOES EDITAR / DUPLICAR / EXCLUIR */}
+                      <button
+                        type="button"
+                        onClick={() => abrirEditarFluxo(fluxo)}
+                        className="p-2 rounded-xl text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 transition"
+                        title="Editar Fluxo"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => duplicarFluxo(fluxo, e)}
+                        className="p-2 rounded-xl text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 transition"
+                        title="Duplicar Fluxo"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => excluirFluxo(fluxo.id, e)}
+                        className="p-2 rounded-xl text-slate-400 hover:text-rose-400 bg-slate-800/80 hover:bg-rose-950/40 transition"
+                        title="Excluir Fluxo"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CORPO DO CARD: GATILHOS E PREVIEW DA MENSAGEM */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4 text-xs">
+                    {/* GATILHOS */}
+                    <div className="lg:col-span-5 space-y-2">
+                      <p className="font-semibold text-slate-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                        <Send className="h-3.5 w-3.5 text-blue-400" />
+                        Gatilhos de Ativação ({fluxo.gatilhos?.length || 0}):
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
+                        {(!fluxo.gatilhos || fluxo.gatilhos.length === 0) ? (
+                          <span className="text-slate-500 italic">Nenhum gatilho configurado.</span>
+                        ) : (
+                          fluxo.gatilhos.map((g, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-950 border border-slate-800 text-slate-300"
+                            >
+                              {g}
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* PREVIEW DA MENSAGEM */}
+                    <div className="lg:col-span-7 space-y-2">
+                      <p className="font-semibold text-slate-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                        <MessageSquare className="h-3.5 w-3.5 text-pink-400" />
+                        Mensagem de Resposta do Robô:
+                      </p>
+                      <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 text-slate-300 font-mono text-[11px] leading-relaxed max-h-32 overflow-y-auto whitespace-pre-wrap">
+                        {fluxo.mensagem}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+            {fluxos.length === 0 && (
+              <div className="text-center py-12 bg-slate-900/40 rounded-2xl border border-slate-800/60">
+                <Megaphone className="h-10 w-10 text-slate-600 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-slate-200">Nenhum fluxo cadastrado</h3>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                  Crie seu primeiro fluxo de qualificação para atender clientes vindos de anúncios ou mensagens específicas.
+                </p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setFluxoAnuncio({
-                      ...fluxoAnuncio,
-                      mensagem: fluxoAnuncio.mensagem + ' {saudacao}'
-                    });
-                  }}
-                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1 transition"
-                  title="Inserir variável de saudação dinâmica (Bom dia / Boa tarde / Boa noite)"
+                  onClick={() => abrirCriarFluxo()}
+                  className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold bg-pink-600 hover:bg-pink-500 text-white transition shadow-lg shadow-pink-600/20 inline-flex items-center gap-1.5"
                 >
-                  <Plus className="h-3 w-3" />
-                  + {'{saudacao}'}
+                  <Plus className="h-3.5 w-3.5" />
+                  Criar Primeiro Fluxo
                 </button>
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                  Nome / Título da Campanha:
-                </label>
-                <input
-                  type="text"
-                  value={fluxoAnuncio.tituloCampanha}
-                  onChange={(e) => setFluxoAnuncio({ ...fluxoAnuncio, tituloCampanha: e.target.value })}
-                  placeholder="Ex: Campanha Interclasse Facebook ADS"
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-pink-500 mb-4"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                  Texto da Mensagem Inicial (WhatsApp Formatação):
-                </label>
-                <textarea
-                  rows={14}
-                  value={fluxoAnuncio.mensagem}
-                  onChange={(e) => setFluxoAnuncio({ ...fluxoAnuncio, mensagem: e.target.value })}
-                  placeholder="Digite a mensagem que o robô responderá..."
-                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 font-mono focus:outline-none focus:border-pink-500 leading-relaxed"
-                />
-              </div>
-
-              <div className="p-4 rounded-xl bg-blue-950/30 border border-blue-900/40 text-xs text-blue-300 space-y-1.5">
-                <p className="font-semibold flex items-center gap-1.5 text-blue-200">
-                  <HelpCircle className="h-4 w-4 text-blue-400" />
-                  Dicas de Inteligência do Robô:
-                </p>
-                <ul className="list-disc list-inside space-y-1 text-slate-300">
-                  <li>Use <code className="text-pink-300 font-mono bg-slate-900 px-1 py-0.5 rounded">{'{saudacao}'}</code> para o bot saudar automaticamente com <i>Bom dia</i>, <i>Boa tarde</i> ou <i>Boa noite</i>.</li>
-                  <li>Use <code className="text-pink-300 font-mono bg-slate-900 px-1 py-0.5 rounded">*texto*</code> para <b>negrito</b> e <code className="text-pink-300 font-mono bg-slate-900 px-1 py-0.5 rounded">_texto_</code> para <i>itálico</i>.</li>
-                  <li>O robô lê a quantidade (ex: 20 peças) e aplica automaticamente o desconto progressivo da tabela de preços!</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* COLUNA DIREITA: SIMULADOR WHATSAPP EM TEMPO REAL */}
-            <div className="lg:col-span-5 flex flex-col">
-              <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-sm flex-1 flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <Smartphone className="h-4 w-4 text-emerald-400" />
-                    Pré-visualização no WhatsApp
-                  </h3>
-                  <span className="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                    Tempo Real
-                  </span>
-                </div>
-
-                {/* CONTAINER MOCKUP WHATSAPP */}
-                <div className="flex-1 bg-[#0b141a] rounded-2xl border border-slate-800 overflow-hidden flex flex-col shadow-2xl">
-                  {/* BARRA SUPERIOR WHATSAPP */}
-                  <div className="bg-[#202c33] px-4 py-3 flex items-center justify-between border-b border-slate-800/60">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-white text-xs">
-                        TC
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-slate-100 flex items-center gap-1.5">
-                          Tenório Confecções
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 inline" />
-                        </p>
-                        <p className="text-[10px] text-emerald-400">online (Robô Ativo)</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* CORPO DA CONVERSA */}
-                  <div
-                    className="p-4 flex-1 overflow-y-auto space-y-3"
-                    style={{
-                      backgroundImage: `radial-gradient(#1f2c34 1px, transparent 1px)`,
-                      backgroundSize: '16px 16px'
-                    }}
-                  >
-                    {/* MENSAGEM DO CLIENTE (ANÚNCIO) */}
-                    <div className="flex justify-end">
-                      <div className="bg-[#005c4b] text-slate-100 text-xs p-3 rounded-2xl rounded-tr-none max-w-[85%] shadow-md">
-                        <p>Olá! Vi o anúncio no Facebook e gostaria de saber mais informações e orçamentos.</p>
-                        <div className="text-[9px] text-emerald-200/70 text-right mt-1 flex items-center justify-end gap-1">
-                          <span>12:00</span>
-                          <span>✓✓</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* RESPOSTA DO ROBÔ (FLUXO ANÚNCIO) */}
-                    <div className="flex justify-start">
-                      <div className="bg-[#202c33] text-slate-100 text-xs p-3.5 rounded-2xl rounded-tl-none max-w-[92%] shadow-md border border-slate-700/30">
-                        <div className="whitespace-pre-wrap leading-relaxed">
-                          {fluxoAnuncio.mensagem
-                            .replace(
-                              /\{saudacao\}/g,
-                              new Date().getHours() < 12
-                                ? 'Bom dia'
-                                : new Date().getHours() < 18
-                                ? 'Boa tarde'
-                                : 'Boa noite'
-                            )
-                            .split('\n')
-                            .map((linha, idx) => {
-                              // Formatação básica de negrito (*texto*) e itálico (_texto_)
-                              let formatted = linha;
-                              return (
-                                <span key={idx}>
-                                  {linha}
-                                  <br />
-                                </span>
-                              );
-                            })}
-                        </div>
-                        <div className="text-[9px] text-slate-400 text-right mt-2 flex items-center justify-end gap-1">
-                          <span>12:00</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* BARRA INFERIOR INPUT WHATSAPP */}
-                  <div className="bg-[#202c33] px-3 py-2.5 flex items-center gap-2 border-t border-slate-800/60">
-                    <div className="flex-1 bg-[#2a3942] rounded-xl px-3 py-1.5 text-xs text-slate-400">
-                      Mensagem
-                    </div>
-                    <div className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center text-white">
-                      <Send className="h-3.5 w-3.5" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-800 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={salvarFluxoAnuncio}
-                    disabled={actionLoading}
-                    className="w-full py-2.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center gap-2 transition"
-                  >
-                    <Check className="h-4 w-4" />
-                    Publicar Alterações no Robô Agora
-                  </button>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -2058,6 +2285,314 @@ export default function ChatbotAdminTab() {
                 className="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition shadow-lg shadow-blue-600/20"
               >
                 Salvar Produto no Robô
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CRIAR OU EDITAR FLUXO DE ATENDIMENTO */}
+      {modalFluxoAberto && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto my-auto">
+            {/* CABEÇALHO DO MODAL */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400">
+                  <Megaphone className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-100">
+                    {editingFluxoId ? 'Editar Fluxo de Atendimento' : 'Criar Novo Fluxo de Atendimento'}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Configure os gatilhos, mensagens e tipo de ação do robô.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setModalFluxoAberto(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* MODELOS RÁPIDOS DE 1 CLIQUE */}
+            <div className="space-y-2 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                Preencher com Modelo Pré-Configurado (1 Clique)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => aplicarTemplateNoForm('esportivo')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs text-slate-300 hover:text-pink-400 border border-slate-800 transition font-medium"
+                >
+                  ⚽ Esportivo / Interclasse
+                </button>
+                <button
+                  type="button"
+                  onClick={() => aplicarTemplateNoForm('corporativo')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs text-slate-300 hover:text-pink-400 border border-slate-800 transition font-medium"
+                >
+                  👔 Uniformes Corporativos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => aplicarTemplateNoForm('algodao')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs text-slate-300 hover:text-pink-400 border border-slate-800 transition font-medium"
+                >
+                  👕 100% Algodão
+                </button>
+                <button
+                  type="button"
+                  onClick={() => aplicarTemplateNoForm('terceirao')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs text-slate-300 hover:text-pink-400 border border-slate-800 transition font-medium"
+                >
+                  🎓 Terceirão / Formandos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => aplicarTemplateNoForm('eventos')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs text-slate-300 hover:text-pink-400 border border-slate-800 transition font-medium"
+                >
+                  🌟 Eventos & Congressos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => aplicarTemplateNoForm('humano')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs text-slate-300 hover:text-blue-400 border border-slate-800 transition font-medium"
+                >
+                  👤 Atendente Humano
+                </button>
+              </div>
+            </div>
+
+            {/* FORMULÁRIO */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* NOME DO FLUXO */}
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Nome / Identificador do Fluxo ou Campanha *
+                </label>
+                <input
+                  type="text"
+                  value={fluxoForm.nome}
+                  onChange={(e) => setFluxoForm({ ...fluxoForm, nome: e.target.value })}
+                  placeholder="Ex: Campanha Anúncios Instagram - Camisetas Interclasse"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-pink-500"
+                />
+              </div>
+
+              {/* TOGGLE HABILITADO / DESABILITADO */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-slate-200">Status deste Fluxo</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {fluxoForm.ativo ? '🟢 Habilitado (O robô responderá a este fluxo)' : '⚪ Desabilitado (Inativo no robô)'}
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={fluxoForm.ativo}
+                    onChange={(e) => setFluxoForm({ ...fluxoForm, ativo: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
+
+              {/* ORIGEM DO LEAD */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                <label className="block text-xs font-bold text-slate-200 mb-1">
+                  Origem do Lead / Campanha (Opcional)
+                </label>
+                <input
+                  type="text"
+                  value={fluxoForm.origemLead || ''}
+                  onChange={(e) => setFluxoForm({ ...fluxoForm, origemLead: e.target.value })}
+                  placeholder="Ex: Meta Ads (Instagram/FB)"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-pink-500"
+                />
+              </div>
+
+              {/* SELETOR DE TIPO DE AÇÃO */}
+              <div className="md:col-span-2 space-y-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Tipo de Ação ao Acionar este Fluxo *
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFluxoForm({ ...fluxoForm, tipoAcao: 'QUESTIONARIO_ORCAMENTO' })}
+                    className={`p-3.5 rounded-xl border text-left transition ${
+                      fluxoForm.tipoAcao === 'QUESTIONARIO_ORCAMENTO'
+                        ? 'bg-blue-600/10 border-blue-500 text-blue-300 shadow-md'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <p className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                      🎯 Orçamento Automático
+                    </p>
+                    <p className="text-[11px] mt-1 text-slate-400">
+                      O bot envia o questionário e na resposta calcula e grava o orçamento no banco com desconto.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFluxoForm({ ...fluxoForm, tipoAcao: 'TRANSFERIR_HUMANO' })}
+                    className={`p-3.5 rounded-xl border text-left transition ${
+                      fluxoForm.tipoAcao === 'TRANSFERIR_HUMANO'
+                        ? 'bg-amber-600/10 border-amber-500 text-amber-300 shadow-md'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <p className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                      👤 Transferir para Humano
+                    </p>
+                    <p className="text-[11px] mt-1 text-slate-400">
+                      Envia mensagem informando o atendimento humano e adiciona na fila de espera com notificação.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFluxoForm({ ...fluxoForm, tipoAcao: 'RESPOSTA_DIRETA' })}
+                    className={`p-3.5 rounded-xl border text-left transition ${
+                      fluxoForm.tipoAcao === 'RESPOSTA_DIRETA'
+                        ? 'bg-purple-600/10 border-purple-500 text-purple-300 shadow-md'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <p className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                      💬 Resposta Direta / FAQ
+                    </p>
+                    <p className="text-[11px] mt-1 text-slate-400">
+                      Apenas envia a mensagem e orientações pré-definidas para o cliente.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* GATILHOS / PALAVRAS-CHAVE */}
+              <div className="md:col-span-2 space-y-3 p-4 rounded-2xl bg-slate-950/80 border border-slate-800">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                    Palavras-Chave Gatilhos (Que Disparam este Fluxo) *
+                  </label>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Se a primeira mensagem do cliente contiver qualquer um desses termos, este fluxo será ativado.
+                  </p>
+                </div>
+
+                {/* TAGS */}
+                <div className="flex flex-wrap gap-1.5 min-h-[42px] p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center">
+                  {fluxoForm.gatilhos.length === 0 ? (
+                    <span className="text-xs text-slate-500 italic">Nenhum gatilho adicionado ainda.</span>
+                  ) : (
+                    fluxoForm.gatilhos.map((g, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-pink-500/10 text-pink-300 border border-pink-500/20"
+                      >
+                        {g}
+                        <button
+                          type="button"
+                          onClick={() => removerGatilhoModal(g)}
+                          className="text-slate-400 hover:text-rose-400"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                {/* INPUT PARA NOVO GATILHO */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={novoGatilhoModal}
+                    onChange={(e) => setNovoGatilhoModal(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        adicionarGatilhoModal();
+                      }
+                    }}
+                    placeholder="Digite um termo e tecle Enter (ex: vi o anuncio, interclasse, polo bordada...)"
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-pink-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => adicionarGatilhoModal()}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-1.5 transition"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Adicionar
+                  </button>
+                </div>
+              </div>
+
+              {/* EDITOR DE MENSAGEM */}
+              <div className="md:col-span-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Mensagem de Resposta do Robô (WhatsApp) *
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setFluxoForm({ ...fluxoForm, mensagem: fluxoForm.mensagem + ' {saudacao}' })}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition"
+                      title="Insere Bom dia / Boa tarde / Boa noite de acordo com o horário"
+                    >
+                      + {'{saudacao}'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFluxoForm({ ...fluxoForm, mensagem: fluxoForm.mensagem + ' {nome}' })}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition"
+                      title="Insere o nome do cliente salvo no WhatsApp"
+                    >
+                      + {'{nome}'}
+                    </button>
+                  </div>
+                </div>
+
+                <textarea
+                  rows={10}
+                  value={fluxoForm.mensagem}
+                  onChange={(e) => setFluxoForm({ ...fluxoForm, mensagem: e.target.value })}
+                  placeholder="Digite a mensagem formatada para WhatsApp..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 focus:outline-none focus:border-pink-500 leading-relaxed"
+                />
+              </div>
+            </div>
+
+            {/* BOTOES DO MODAL */}
+            <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setModalFluxoAberto(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={salvarFluxoFormModal}
+                disabled={actionLoading}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white transition shadow-lg shadow-pink-600/25 flex items-center gap-1.5"
+              >
+                <Save className="h-4 w-4" />
+                Salvar Fluxo
               </button>
             </div>
           </div>
