@@ -249,31 +249,39 @@ export default function ChatbotAdminTab() {
 
   const carregarStatus = useCallback(async () => {
     try {
-      // 1. Tenta carregar via proxy Next.js (funciona em HTTPS, Vercel e Localhost sem problemas de CORS ou Mixed Content)
-      let res = await fetch('/api/admin/chatbot/status', { cache: 'no-store' });
-      if (res.ok) {
-        const json: StatusResponse = await res.json();
-        if (json && json.status && json.status !== 'DISCONNECTED') {
-          setData(json);
-          return;
-        } else if (json && json.status) {
-          setData(json);
+      let statusData: StatusResponse | null = null;
+
+      // 1. Tenta carregar via proxy Next.js (Heartbeat da nuvem / servidor)
+      try {
+        const res = await fetch('/api/admin/chatbot/status', { cache: 'no-store' });
+        if (res.ok) {
+          const json: StatusResponse = await res.json();
+          if (json && json.status && json.status !== 'DISCONNECTED') {
+            setData(json);
+            return;
+          }
+          statusData = json;
         }
-      }
+      } catch (e) {}
 
       // 2. Fallback: tenta carregar direto do localhost:3001
-      if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        try {
-          const directRes = await fetch(`${botUrl}/api/status`, { cache: 'no-store' });
-          if (directRes.ok) {
-            const directJson: StatusResponse = await directRes.json();
+      try {
+        const directRes = await fetch(`${botUrl}/api/status`, { cache: 'no-store' });
+        if (directRes.ok) {
+          const directJson: StatusResponse = await directRes.json();
+          if (directJson && directJson.status && directJson.status !== 'DISCONNECTED') {
             setData(directJson);
             return;
           }
-        } catch (e) {}
+          statusData = directJson;
+        }
+      } catch (e) {}
+
+      if (statusData) {
+        setData(statusData);
       }
     } catch (e: any) {
-      // Se falhar a conexão, mantém estado anterior
+      // Mantém estado anterior em caso de erro de rede
     } finally {
       setLoading(false);
     }

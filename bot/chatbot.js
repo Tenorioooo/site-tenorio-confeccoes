@@ -1250,4 +1250,56 @@ app.post("/api/test-calculo", (req, res) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 [API do Chatbot] Servidor Express ativo na porta ${PORT} (http://localhost:${PORT})`);
+  // Dispara o primeiro heartbeat imediatamente
+  enviarHeartbeatParaSite();
 });
+
+// =====================================
+// SINCRONIZADOR DE STATUS EM TEMPO REAL (HEARTBEAT PARA A NUVEM)
+// =====================================
+function montarPayloadStatus() {
+  const tabela = carregarTabelaPrecos();
+  const configNotif = carregarConfigNotificacoes();
+  const totalAguardando = clientesAguardandoHumano.filter((c) => c.status === "AGUARDANDO").length;
+
+  return {
+    status: botStatus,
+    qrCode: qrCodeDataUrl,
+    info: botInfo,
+    stats: {
+      ...stats,
+      totalProdutos: tabela.produtos ? tabela.produtos.length : 0,
+      totalAguardandoHumano: totalAguardando,
+    },
+    ultimosOrcamentos,
+    clientesAguardando: clientesAguardandoHumano,
+    notificacoes: configNotif,
+  };
+}
+
+async function enviarHeartbeatParaSite() {
+  const payload = {
+    type: "HEARTBEAT",
+    data: montarPayloadStatus(),
+  };
+
+  const targetUrls = [
+    "http://localhost:3000/api/admin/chatbot/status",
+    "http://127.0.0.1:3000/api/admin/chatbot/status",
+    "https://www.tenorioconfeccoes.shop/api/admin/chatbot/status",
+  ];
+
+  for (const url of targetUrls) {
+    try {
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    } catch (e) {}
+  }
+}
+
+// Envia o heartbeat a cada 3 segundos continuamente
+setInterval(enviarHeartbeatParaSite, 3000);
+
