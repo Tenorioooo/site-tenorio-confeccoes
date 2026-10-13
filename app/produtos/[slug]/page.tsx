@@ -21,7 +21,9 @@ import {
   FileText,
   TrendingDown,
   Zap,
+  Ruler,
 } from 'lucide-react';
+import { SizeGuideModal } from '@/components/SizeGuideModal';
 import { trackEvent } from '@/lib/analytics';
 import { 
   calculateProductPrice, 
@@ -57,6 +59,7 @@ export default function ProductDetailPage() {
 
   // Sizes breakdown matrix — starts empty, filled after product loads
   const [sizeQuantities, setSizeQuantities] = useState<{ [size: string]: number }>({});
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
 
   // Observations
   const [notes, setNotes] = useState('');
@@ -707,10 +710,23 @@ export default function ProductDetailPage() {
 
             {/* Step 3: Size Quantities Distribution */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  3. Divisão por Tamanhos:
-                </label>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2.5">
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                    3. Divisão por Tamanhos:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsSizeGuideOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 px-2.5 py-1 rounded-lg transition-all"
+                  >
+                    <Ruler className="w-3.5 h-3.5" />
+                    <span>Guia de Medidas</span>
+                  </button>
+                </div>
                 <span className="text-xs font-bold text-blue-400">
                   Total: {totalItemQuantity} unidades
                 </span>
@@ -840,6 +856,13 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal Guia de Tamanhos */}
+      <SizeGuideModal
+        isOpen={isSizeGuideOpen}
+        onClose={() => setIsSizeGuideOpen(false)}
+        initialCategory={product?.category}
+      />
     </div>
   );
 }

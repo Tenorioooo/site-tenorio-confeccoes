@@ -44,6 +44,8 @@ export default function AdminSettingsPage() {
     logo_url: '',
     favicon_url: '',
     admin_session_timeout: '15',
+    ga_id: '',
+    pixel_id: '',
   });
 
   useEffect(() => {
@@ -449,6 +451,43 @@ export default function AdminSettingsPage() {
               onChange={(e) => handleChange('whatsapp_message_template', e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white h-20 resize-none focus:border-blue-400 focus:outline-none"
             />
+          </div>
+
+          {/* ── RASTREAMENTO & ANÚNCIOS (GOOGLE & META) ── */}
+          <div className="pt-4 border-t border-slate-800/80 space-y-3">
+            <div>
+              <h3 className="font-bold text-white text-xs flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                Rastreamento de Tráfego &amp; Anúncios (Google &amp; Meta Ads)
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Insira os IDs para ativar automaticamente o rastreamento de visitas, cliques de WhatsApp e envio de orçamentos.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-slate-300 font-bold block">ID do Google Analytics 4 (GA4)</label>
+                <input
+                  type="text"
+                  placeholder="Ex: G-XXXXXXXXXX"
+                  value={form.ga_id}
+                  onChange={(e) => handleChange('ga_id', e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:border-blue-400 focus:outline-none font-mono text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-300 font-bold block">ID do Meta Pixel (Facebook/Instagram)</label>
+                <input
+                  type="text"
+                  placeholder="Ex: 123456789012345"
+                  value={form.pixel_id}
+                  onChange={(e) => handleChange('pixel_id', e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:border-blue-400 focus:outline-none font-mono text-xs"
+                />
+              </div>
+            </div>
           </div>
         </div>
 

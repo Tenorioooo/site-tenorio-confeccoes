@@ -215,7 +215,11 @@ async function dispararNotificacaoAdmin({ tipo, titulo, mensagem, dados }) {
         let textoZap = `🔔 *[PAINEL TENÓRIO CONFECÇÕES]*\n\n${titulo}\n\n${mensagem}`;
         if (dados && dados.clientePhone) {
           const cleanCliente = String(dados.clientePhone).replace(/[^0-9]/g, "");
-          textoZap += `\n\n👉 *Conversar com o cliente:* https://wa.me/${cleanCliente}`;
+          if (cleanCliente.length >= 10 && cleanCliente.length <= 13) {
+            textoZap += `\n\n👉 *Conversar com o cliente:* https://wa.me/${cleanCliente}`;
+          } else if (cleanCliente) {
+            textoZap += `\n\n👉 *Contato/ID:* ${cleanCliente}`;
+          }
         }
 
         try {
@@ -230,7 +234,10 @@ async function dispararNotificacaoAdmin({ tipo, titulo, mensagem, dados }) {
 }
 
 function registrarClienteAguardando(numeroRaw, nomeContato, motivo) {
-  const telefone = String(numeroRaw || "").replace(/[^0-9]/g, "");
+  let telefone = String(numeroRaw || "").replace(/[^0-9]/g, "");
+  if (telefone.length >= 10 && telefone.length <= 11 && !telefone.startsWith("55")) {
+    telefone = "55" + telefone;
+  }
   const id = "CLI-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
   const index = clientesAguardandoHumano.findIndex((c) => c.telefone === telefone && c.status === "AGUARDANDO");
   const novoRegistro = {
@@ -274,9 +281,24 @@ function salvarTabelaPrecos(novaTabela) {
 async function salvarOrcamentoNoBanco(calculo, clientePhoneRaw) {
   try {
     const config = carregarConfigNotificacoes();
-    let cleanPhone = String(clientePhoneRaw || calculo.dados.whatsapp || "").replace(/[^0-9]/g, "");
-    if (cleanPhone.length >= 10 && !cleanPhone.startsWith("55") && cleanPhone.length <= 11) {
-      cleanPhone = "55" + cleanPhone;
+    let cleanPhone = "";
+
+    // 1. Prioriza o WhatsApp preenchido nos dados do orçamento
+    if (calculo.dados && calculo.dados.whatsapp) {
+      const p = String(calculo.dados.whatsapp).replace(/[^0-9]/g, "");
+      if (p.length >= 10 && p.length <= 13) {
+        cleanPhone = (p.length <= 11 && !p.startsWith("55")) ? "55" + p : p;
+      }
+    }
+
+    // 2. Se não veio no formulário, usa o telefone capturado do remetente
+    if (!cleanPhone && clientePhoneRaw) {
+      const p = String(clientePhoneRaw).replace(/[^0-9]/g, "");
+      if (p.length >= 10 && p.length <= 13) {
+        cleanPhone = (p.length <= 11 && !p.startsWith("55")) ? "55" + p : p;
+      } else if (p) {
+        cleanPhone = p;
+      }
     }
 
     let localizacao = calculo.dados.localizacao || "";
@@ -453,6 +475,127 @@ criarClienteWhatsApp();
 // =====================================
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
+/**
+ * Extrai de forma inteligente e precisa o número de telefone real e o nome do lead,
+ * resolvendo o problema de identificadores internos da Meta/Ads (LID - @lid) e
+ * garantindo o formato correto com DDI/DDD (ex: 5581999999999).
+ */
+async function extrairDadosLead(msg, dadosOrcamento = null) {
+  let nomeContato = "Cliente";
+  let telefone = "";
+
+  // 1. Prioridade: Se o lead preencheu o campo WhatsApp no orçamento estruturado
+  if (dadosOrcamento && dadosOrcamento.whatsapp) {
+    const rawForm = String(dadosOrcamento.whatsapp).replace(/[^0-9]/g, "");
+    if (rawForm.length >= 10 && rawForm.length <= 13) {
+      telefone = (rawForm.length <= 11 && !rawForm.startsWith("55")) ? "55" + rawForm : rawForm;
+    }
+  }
+
+  // 2. Busca informações do Contact no whatsapp-web.js
+  let contact = null;
+  try {
+    contact = await msg.getContact();
+  } catch (e) {
+    console.warn("⚠️ Não foi possível obter contact via msg.getContact():", e.message);
+  }
+
+  if (contact) {
+    if (contact.name || contact.pushname) {
+      nomeContato = contact.name || contact.pushname;
+    }
+
+    // Tenta obter número formatado oficial via método do WhatsApp Web
+    if (!telefone && typeof contact.getFormattedNumber === "function") {
+      try {
+        const formatted = await contact.getFormattedNumber();
+        if (formatted) {
+          const rawFormatted = String(formatted).replace(/[^0-9]/g, "");
+          if (rawFormatted.length >= 10 && rawFormatted.length <= 13) {
+            telefone = (rawFormatted.length <= 11 && !rawFormatted.startsWith("55")) ? "55" + rawFormatted : rawFormatted;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Tenta contact.number (se for número de telefone real e não um LID longo)
+    if (!telefone && contact.number) {
+      const cNum = String(contact.number).replace(/[^0-9]/g, "");
+      if (cNum.length >= 10 && cNum.length <= 13) {
+        telefone = (cNum.length <= 11 && !cNum.startsWith("55")) ? "55" + cNum : cNum;
+      }
+    }
+
+    // Tenta contact.id.user se o servidor for c.us (não lid)
+    if (!telefone && contact.id && contact.id.server === "c.us" && contact.id.user) {
+      const cUser = String(contact.id.user).replace(/[^0-9]/g, "");
+      if (cUser.length >= 10 && cUser.length <= 13) {
+        telefone = (cUser.length <= 11 && !cUser.startsWith("55")) ? "55" + cUser : cUser;
+      }
+    }
+  }
+
+  // 3. Verifica msg.author ou msg.from se pertencer ao servidor @c.us (não @lid)
+  if (!telefone) {
+    const idsParaTestar = [msg.author, msg.from].filter(Boolean);
+    for (const rawId of idsParaTestar) {
+      if (rawId.includes("@c.us") || (!rawId.includes("@lid") && !rawId.includes("@g.us"))) {
+        const parsed = rawId.split("@")[0].replace(/[^0-9]/g, "");
+        if (parsed.length >= 10 && parsed.length <= 13) {
+          telefone = (parsed.length <= 11 && !parsed.startsWith("55")) ? "55" + parsed : parsed;
+          break;
+        }
+      }
+    }
+  }
+
+  // 4. Verifica dados internos do WhatsApp Web JS (_data)
+  if (!telefone && msg._data) {
+    const possiveisCandidatos = [
+      msg._data.sender?.user,
+      msg._data.id?.participant ? msg._data.id.participant.split("@")[0] : null,
+      msg._data.author ? msg._data.author.split("@")[0] : null,
+    ].filter(Boolean);
+
+    for (const cand of possiveisCandidatos) {
+      const limpo = String(cand).replace(/[^0-9]/g, "");
+      if (limpo.length >= 10 && limpo.length <= 13) {
+        telefone = (limpo.length <= 11 && !limpo.startsWith("55")) ? "55" + limpo : limpo;
+        break;
+      }
+    }
+
+    if (!nomeContato || nomeContato === "Cliente") {
+      if (msg._data.notifyName) nomeContato = msg._data.notifyName;
+    }
+  }
+
+  // 5. Tenta extrair número de telefone brasileiro mencionado no corpo da mensagem
+  if (!telefone && msg.body) {
+    const regexTel = /(?:\+?55\s?)?(?:\(?([1-9]{2})\)?\s?)(?:(9\s?\d{4}[-\s]?\d{4})|(\d{4}[-\s]?\d{4}))/;
+    const matchTel = msg.body.match(regexTel);
+    if (matchTel) {
+      const ddd = matchTel[1];
+      const rest = (matchTel[2] || matchTel[3]).replace(/[^0-9]/g, "");
+      const full = "55" + ddd + rest;
+      if (full.length >= 12 && full.length <= 13) {
+        telefone = full;
+      }
+    }
+  }
+
+  // 6. Fallback final (se não conseguiu identificar telefone limpo, usa o identificador que tiver)
+  if (!telefone) {
+    telefone = String(msg.from || "").split("@")[0].replace(/[^0-9]/g, "");
+  }
+
+  return {
+    nomeContato: nomeContato || "Cliente",
+    telefone,
+    contact,
+  };
+}
+
 // =====================================
 // FUNIL DE MENSAGENS (SOMENTE PRIVADO)
 // =====================================
@@ -509,14 +652,19 @@ client.on("message_create", async (msg) => {
       estadosConversa.delete(msg.from);
       console.log(`📋 [Orçamento Detectado] Processando solicitação de ${msg.from}...`);
       const dadosOrcamento = parseOrcamento(msg.body);
+      const leadInfo = await extrairDadosLead(msg, dadosOrcamento);
       const calculo = calcularOrcamento(dadosOrcamento);
       const respostaOrcamento = gerarRespostaOrcamento(calculo);
+
+      const nomeFinal = calculo.dados.cliente || leadInfo.nomeContato || "Cliente";
+      const telefoneFinal = leadInfo.telefone;
 
       // Atualiza estatísticas
       stats.totalOrcamentos++;
       ultimosOrcamentos.unshift({
         codigo: calculo.dados.codigo || "ORC-" + Date.now(),
-        cliente: calculo.dados.cliente || "Cliente",
+        cliente: nomeFinal,
+        telefone: telefoneFinal,
         total: calculo.totalLiquido,
         pecas: calculo.totalPecas,
         data: new Date().toISOString(),
@@ -524,15 +672,15 @@ client.on("message_create", async (msg) => {
       if (ultimosOrcamentos.length > 20) ultimosOrcamentos.pop();
 
       // Sincroniza e grava no banco de dados do Painel Admin (/api/quotes)
-      salvarOrcamentoNoBanco(calculo, msg.from);
+      salvarOrcamentoNoBanco(calculo, telefoneFinal);
 
       // Notifica admin sobre novo orçamento
       const valorMoeda = (calculo.totalLiquido || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
       dispararNotificacaoAdmin({
         tipo: "NOVO_ORCAMENTO",
         titulo: `💰 Novo Orçamento Recebido (${valorMoeda})`,
-        mensagem: `*Cliente:* ${calculo.dados.cliente || "Cliente"}\n*Volume:* ${calculo.totalPecas} peças\n*Valor:* ${valorMoeda}`,
-        dados: { clientePhone: msg.from, nome: calculo.dados.cliente },
+        mensagem: `*Cliente:* ${nomeFinal}\n*WhatsApp:* ${telefoneFinal || "Não informado"}\n*Volume:* ${calculo.totalPecas} peças\n*Valor:* ${valorMoeda}`,
+        dados: { clientePhone: telefoneFinal, nome: nomeFinal },
       });
 
       await responder(respostaOrcamento);
@@ -564,13 +712,8 @@ client.on("message_create", async (msg) => {
         estadosConversa.delete(msg.from);
         console.log(`📝 [Questionário ${isFluxo ? `de Fluxo (${origemFluxo}) ` : ""}Respondido] Interpretando dados enviados por ${msg.from}...`);
 
-        let nomeContato = "Cliente";
-        try {
-          const contact = await msg.getContact();
-          if (contact && (contact.name || contact.pushname)) {
-            nomeContato = contact.name || contact.pushname;
-          }
-        } catch (e) {}
+        const leadInfo = await extrairDadosLead(msg);
+        let nomeContato = leadInfo.nomeContato || "Cliente";
 
         const dadosOrcamento = interpretarRespostaQuestionario(msg.body, nomeContato);
         if (isFluxo) {
@@ -582,11 +725,15 @@ client.on("message_create", async (msg) => {
         const calculo = calcularOrcamento(dadosOrcamento);
         const respostaOrcamento = gerarRespostaOrcamento(calculo);
 
+        const nomeFinal = calculo.dados.cliente || nomeContato;
+        const telefoneFinal = leadInfo.telefone;
+
         // Atualiza estatísticas
         stats.totalOrcamentos++;
         ultimosOrcamentos.unshift({
           codigo: calculo.dados.codigo || "ORC-" + Date.now(),
-          cliente: calculo.dados.cliente || "Cliente",
+          cliente: nomeFinal,
+          telefone: telefoneFinal,
           total: calculo.totalLiquido,
           pecas: calculo.totalPecas,
           data: new Date().toISOString(),
@@ -594,7 +741,7 @@ client.on("message_create", async (msg) => {
         if (ultimosOrcamentos.length > 20) ultimosOrcamentos.pop();
 
         // Sincroniza e grava no banco de dados do Painel Admin (/api/quotes)
-        salvarOrcamentoNoBanco(calculo, msg.from);
+        salvarOrcamentoNoBanco(calculo, telefoneFinal);
 
         // Notifica admin sobre novo orçamento com destaque se for de campanha / fluxo
         const valorMoeda = (calculo.totalLiquido || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -605,8 +752,8 @@ client.on("message_create", async (msg) => {
         dispararNotificacaoAdmin({
           tipo: "NOVO_ORCAMENTO",
           titulo: tituloNotif,
-          mensagem: `*Cliente:* ${nomeContato}\n*Volume:* ${calculo.totalPecas} peças\n*Valor Total:* ${valorMoeda}\n*Origem:* ${isFluxo ? origemFluxo : "WhatsApp Direto"}`,
-          dados: { clientePhone: msg.from, nome: nomeContato },
+          mensagem: `*Cliente:* ${nomeFinal}\n*WhatsApp:* ${telefoneFinal || "Não informado"}\n*Volume:* ${calculo.totalPecas} peças\n*Valor Total:* ${valorMoeda}\n*Origem:* ${isFluxo ? origemFluxo : "WhatsApp Direto"}`,
+          dados: { clientePhone: telefoneFinal, nome: nomeFinal },
         });
 
         await responder(respostaOrcamento);
@@ -641,24 +788,19 @@ client.on("message_create", async (msg) => {
       else if (hora >= 12 && hora < 18) saudacao = "Boa tarde";
       else saudacao = "Boa noite";
 
-      let nomeContato = "Cliente";
-      try {
-        const contact = await msg.getContact();
-        if (contact && (contact.name || contact.pushname)) {
-          nomeContato = contact.name || contact.pushname;
-        }
-      } catch (e) {}
+      const leadInfo = await extrairDadosLead(msg);
+      const nomeContato = leadInfo.nomeContato || "Cliente";
 
       let templateMensagem = fluxoAcionado.mensagem || "";
       let msgFormatada = templateMensagem
         .replace(/{saudacao}/gi, saudacao)
         .replace(/{nome}/gi, nomeContato);
 
-      console.log(`🎯 [Fluxo Acionado] "${fluxoAcionado.nome}" (Tipo: ${fluxoAcionado.tipoAcao || "QUESTIONARIO_ORCAMENTO"}) para ${msg.from}`);
+      console.log(`🎯 [Fluxo Acionado] "${fluxoAcionado.nome}" (Tipo: ${fluxoAcionado.tipoAcao || "QUESTIONARIO_ORCAMENTO"}) para ${msg.from} (Tel: ${leadInfo.telefone})`);
 
       // Executa de acordo com a ação do fluxo
       if (fluxoAcionado.tipoAcao === "TRANSFERIR_HUMANO") {
-        registrarClienteAguardando(msg.from, nomeContato, fluxoAcionado.nome);
+        registrarClienteAguardando(leadInfo.telefone || msg.from, nomeContato, fluxoAcionado.nome);
         await responder(msgFormatada);
         return;
       }
@@ -846,15 +988,10 @@ client.on("message_create", async (msg) => {
     // 7. OPÇÃO 5: FALAR COM ATENDENTE
     // =====================================
     if (texto === "5" || texto.includes("atendente") || texto.includes("humano") || texto.includes("vendedor") || texto.includes("falar com atendente")) {
-      let nomeContato = "Cliente";
-      try {
-        const contact = await msg.getContact();
-        if (contact && (contact.name || contact.pushname)) {
-          nomeContato = contact.name || contact.pushname;
-        }
-      } catch (e) {}
+      const leadInfo = await extrairDadosLead(msg);
+      const nomeContato = leadInfo.nomeContato || "Cliente";
 
-      registrarClienteAguardando(msg.from, nomeContato, "Solicitou Falar com Atendente Humano (Opção 5)");
+      registrarClienteAguardando(leadInfo.telefone || msg.from, nomeContato, "Solicitou Falar com Atendente Humano (Opção 5)");
 
       const msgAtendente =
         `👨‍💼 *ATENDIMENTO HUMANIZADO*\n\n` +

@@ -23,9 +23,10 @@ export function Header() {
   const navLinks = [
     { name: 'Início', href: '/' },
     { name: 'Produtos', href: '/produtos' },
+    { name: 'Terceirão', href: '/terceirao' },
     { name: 'Estampas', href: '/estampas' },
+    { name: 'Empresas', href: '/empresas' },
     { name: 'Eventos', href: '/eventos' },
-    { name: 'Como Funciona', href: '/#como-funciona' },
     { name: 'Sobre Nós', href: '/sobre' },
     { name: 'Contato', href: '/contato' },
   ];

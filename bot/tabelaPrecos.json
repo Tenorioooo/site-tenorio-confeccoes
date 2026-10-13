@@ -456,7 +456,7 @@
         "Oversized Algodao",
         "Camiseta Oversized Algodao"
       ],
-      "precoBase": 0,
+      "precoBase": 67.8,
       "prazoConfeccao": "7 a 15 dias úteis",
       "quantidadeMinima": 1,
       "permiteDescontoProgressivo": true,
@@ -471,7 +471,17 @@
           "maxQty": null,
           "unitPrice": 65.8
         }
-      ]
+      ],
+      "precoBaseUnitario": 67.8,
+      "termosIdentificacao": [
+        "Camiseta Oversized Algodão",
+        "Oversized Algodão",
+        "Oversized Algodao",
+        "Camiseta Oversized Algodao"
+      ],
+      "gradeTamanhos": [],
+      "coresDisponiveis": [],
+      "variacoes": []
     },
     {
       "nome": "Camiseta Oversized Suedine",
@@ -481,7 +491,7 @@
         "Oversized Suedine",
         "Suedine"
       ],
-      "precoBase": 0,
+      "precoBase": 85.8,
       "prazoConfeccao": "7 a 15 dias úteis",
       "quantidadeMinima": 1,
       "permiteDescontoProgressivo": true,
@@ -496,7 +506,16 @@
           "maxQty": null,
           "unitPrice": 81.8
         }
-      ]
+      ],
+      "precoBaseUnitario": 85.8,
+      "termosIdentificacao": [
+        "Camiseta Oversized Suedine",
+        "Oversized Suedine",
+        "Suedine"
+      ],
+      "gradeTamanhos": [],
+      "coresDisponiveis": [],
+      "variacoes": []
     },
     {
       "nome": "Camiseta Regata",
@@ -505,7 +524,7 @@
         "Camiseta Regata",
         "Regata"
       ],
-      "precoBase": 0,
+      "precoBase": 47.8,
       "prazoConfeccao": "7 a 15 dias úteis",
       "quantidadeMinima": 1,
       "permiteDescontoProgressivo": true,
@@ -520,7 +539,15 @@
           "maxQty": null,
           "unitPrice": 45.8
         }
-      ]
+      ],
+      "precoBaseUnitario": 47.8,
+      "termosIdentificacao": [
+        "Camiseta Regata",
+        "Regata"
+      ],
+      "gradeTamanhos": [],
+      "coresDisponiveis": [],
+      "variacoes": []
     },
     {
       "nome": "Camiseta Manga Longa",
@@ -529,7 +556,7 @@
         "Camiseta Manga Longa",
         "Manga Longa"
       ],
-      "precoBase": 0,
+      "precoBase": 49.8,
       "prazoConfeccao": "7 a 15 dias úteis",
       "quantidadeMinima": 1,
       "permiteDescontoProgressivo": true,
@@ -544,7 +571,15 @@
           "maxQty": null,
           "unitPrice": 47.8
         }
-      ]
+      ],
+      "precoBaseUnitario": 49.8,
+      "termosIdentificacao": [
+        "Camiseta Manga Longa",
+        "Manga Longa"
+      ],
+      "gradeTamanhos": [],
+      "coresDisponiveis": [],
+      "variacoes": []
     }
   ],
   "precoPadrao": 39.9,

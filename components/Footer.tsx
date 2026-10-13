@@ -107,6 +107,16 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/terceirao" className="hover:text-amber-400 text-amber-300 font-semibold transition-colors">
+                  Terceirão &amp; Formaturas
+                </Link>
+              </li>
+              <li>
+                <Link href="/empresas" className="hover:text-blue-400 transition-colors">
+                  Uniformes Corporativos
+                </Link>
+              </li>
+              <li>
                 <Link href="/estampas" className="hover:text-blue-400 transition-colors">
                   Catálogo de Estampas
                 </Link>

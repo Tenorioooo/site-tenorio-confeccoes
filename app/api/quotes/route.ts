@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { generateQuoteCode } from '@/lib/utils';
+import { sendPushNotification } from '@/lib/push-notifications';
 
 export async function GET(request: Request) {
   try {
@@ -225,6 +226,28 @@ export async function POST(request: Request) {
         files: true,
       },
     });
+
+    // Dispara notificação Web Push em tempo real para os administradores
+    try {
+      const totalPieces = Array.isArray(items)
+        ? items.reduce((acc: number, it: any) => acc + (Number(it.quantity) || 1), 0)
+        : 1;
+      const productSummary = Array.isArray(items) && items.length > 0
+        ? items.map((it: any) => it.productName || 'Personalizado').slice(0, 2).join(', ')
+        : 'Produtos personalizados';
+      const extraItems = Array.isArray(items) && items.length > 2 ? ` (+${items.length - 2} itens)` : '';
+      const totalEstText = estimatedTotal ? ` • Total: R$ ${Number(estimatedTotal).toFixed(2).replace('.', ',')}` : '';
+
+      await sendPushNotification({
+        title: `🔔 Novo Orçamento: ${quoteCode}`,
+        body: `${customerName} (${whatsapp}) solicitou ${totalPieces} peças: ${productSummary}${extraItems}${totalEstText}`,
+        url: `/admin/orcamentos?search=${quoteCode}`,
+        tag: `orcamento-${quoteCode}`,
+        icon: '/favicon.svg',
+      });
+    } catch (pushErr) {
+      console.warn('Alerta: Erro ao disparar push notification de novo orçamento:', pushErr);
+    }
 
     return NextResponse.json(fullQuote, { status: 201 });
   } catch (error: any) {

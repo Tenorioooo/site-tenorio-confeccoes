@@ -35,7 +35,7 @@ export default function QuotePage() {
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
   const [city, setCity] = useState('');
-  const [state, setState] = useState('PE');
+  const [state, setState] = useState('SP');
   const [desiredDate, setDesiredDate] = useState('');
   const [notes, setNotes] = useState('');
   const [consent, setConsent] = useState(true);

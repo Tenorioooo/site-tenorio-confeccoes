@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Sparkles, MessageCircle, ArrowLeft, Search, CheckCircle2, Copy } from 'lucide-react';
+import { Sparkles, MessageCircle, ArrowLeft, Search, CheckCircle2, Copy, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { trackEvent } from '@/lib/analytics';
 
@@ -98,14 +98,22 @@ function SuccessContent() {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 max-w-md mx-auto">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 max-w-lg mx-auto">
         <button
           onClick={handleOpenWhatsApp}
-          className="w-full inline-flex items-center justify-center gap-3 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-4 px-6 rounded-xl shadow-xl shadow-emerald-500/20 text-base transition-all hover:scale-105"
+          className="w-full sm:flex-1 inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-3.5 px-5 rounded-xl shadow-xl shadow-emerald-500/20 text-sm transition-all hover:scale-105 active:scale-95"
         >
           <MessageCircle className="w-5 h-5 fill-white/20" />
           <span>ABRIR NO WHATSAPP</span>
         </button>
+
+        <Link
+          href={`/acompanhar-orcamento?code=${code}&print=true`}
+          className="w-full sm:flex-1 inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 px-5 rounded-xl border border-slate-700 text-sm transition-all hover:scale-105 active:scale-95 shadow-lg"
+        >
+          <FileText className="w-4 h-4 text-blue-400" />
+          <span>BAIXAR PROPOSTA (PDF)</span>
+        </Link>
       </div>
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 text-xs">
