@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Calculator,
@@ -9,96 +9,196 @@ import {
   ShieldCheck,
   Star,
   Zap,
+  Info,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/pricing';
 
-interface SimulatorProduct {
+export interface SimulatorProduct {
   id: string;
   name: string;
+  category?: string;
   basePrice: number;
+  minQty: number;
+  prazo?: string;
   tiers: Array<{ minQty: number; maxQty: number | null; unitPrice: number }>;
 }
 
-const PRODUCTS: SimulatorProduct[] = [
+// Valores OFICIAIS sincronizados com bot/tabelaPrecos.json e catálogo
+const INITIAL_PRODUCTS: SimulatorProduct[] = [
   {
     id: 'algodao',
     name: 'Camiseta 100% Algodão',
+    category: 'Camisetas',
     basePrice: 49.9,
+    minQty: 1,
+    prazo: '15 a 20 dias úteis',
     tiers: [
-      { minQty: 1, maxQty: 9, unitPrice: 49.9 },
-      { minQty: 10, maxQty: 19, unitPrice: 45.8 },
-      { minQty: 20, maxQty: 49, unitPrice: 39.9 },
-      { minQty: 50, maxQty: 99, unitPrice: 35.0 },
-      { minQty: 100, maxQty: null, unitPrice: 29.9 },
+      { minQty: 1, maxQty: 10, unitPrice: 49.9 },
+      { minQty: 11, maxQty: null, unitPrice: 45.8 },
     ],
   },
   {
     id: 'dryfit',
     name: 'Camiseta Dry-Fit Esportiva',
+    category: 'Esportivo',
     basePrice: 64.9,
+    minQty: 1,
+    prazo: '30 a 40 dias úteis',
     tiers: [
-      { minQty: 1, maxQty: 9, unitPrice: 64.9 },
-      { minQty: 10, maxQty: 19, unitPrice: 59.9 },
-      { minQty: 20, maxQty: 49, unitPrice: 52.0 },
-      { minQty: 50, maxQty: 99, unitPrice: 46.0 },
-      { minQty: 100, maxQty: null, unitPrice: 39.9 },
+      { minQty: 1, maxQty: 10, unitPrice: 64.9 },
+      { minQty: 11, maxQty: null, unitPrice: 59.9 },
     ],
   },
   {
     id: 'polo',
-    name: 'Camisa Polo Piquet Bordada',
+    name: 'Camisa Polo Bordada',
+    category: 'Corporativo',
     basePrice: 74.9,
+    minQty: 1,
+    prazo: '15 a 20 dias úteis',
     tiers: [
-      { minQty: 1, maxQty: 9, unitPrice: 74.9 },
-      { minQty: 10, maxQty: 19, unitPrice: 69.9 },
-      { minQty: 20, maxQty: 49, unitPrice: 62.0 },
-      { minQty: 50, maxQty: 99, unitPrice: 55.0 },
-      { minQty: 100, maxQty: null, unitPrice: 49.9 },
+      { minQty: 1, maxQty: 10, unitPrice: 74.9 },
+      { minQty: 11, maxQty: null, unitPrice: 69.9 },
     ],
   },
   {
     id: 'moletom',
-    name: 'Moletom Canguru Flanelado',
-    basePrice: 129.9,
+    name: 'Moletom Canguru',
+    category: 'Inverno',
+    basePrice: 119.9,
+    minQty: 1,
+    prazo: '15 a 20 dias úteis',
     tiers: [
-      { minQty: 1, maxQty: 9, unitPrice: 129.9 },
-      { minQty: 10, maxQty: 19, unitPrice: 119.0 },
-      { minQty: 20, maxQty: 49, unitPrice: 108.0 },
-      { minQty: 50, maxQty: null, unitPrice: 99.0 },
+      { minQty: 1, maxQty: 10, unitPrice: 119.9 },
+      { minQty: 11, maxQty: null, unitPrice: 115.8 },
     ],
   },
   {
     id: 'caneca',
-    name: 'Caneca Porcelana AAA (325ml)',
-    basePrice: 34.9,
+    name: 'Caneca Alumínio (300ml)',
+    category: 'Brindes',
+    basePrice: 28.46,
+    minQty: 20,
+    prazo: '20 a 25 dias úteis',
     tiers: [
-      { minQty: 1, maxQty: 9, unitPrice: 34.9 },
-      { minQty: 10, maxQty: 29, unitPrice: 28.0 },
-      { minQty: 30, maxQty: 99, unitPrice: 22.9 },
-      { minQty: 100, maxQty: null, unitPrice: 18.9 },
+      { minQty: 20, maxQty: null, unitPrice: 28.46 },
+    ],
+  },
+  {
+    id: 'abada',
+    name: 'Abadá Personalizado',
+    category: 'Eventos',
+    basePrice: 49.8,
+    minQty: 10,
+    prazo: '15 a 20 dias úteis',
+    tiers: [
+      { minQty: 10, maxQty: null, unitPrice: 49.8 },
+    ],
+  },
+  {
+    id: 'windbanner',
+    name: 'Wind Banner',
+    category: 'Publicidade',
+    basePrice: 129.8,
+    minQty: 1,
+    prazo: '7 a 12 dias úteis',
+    tiers: [
+      { minQty: 1, maxQty: null, unitPrice: 129.8 },
     ],
   },
 ];
 
 export function QuickQuoteSimulator() {
+  const [products, setProducts] = useState<SimulatorProduct[]>(INITIAL_PRODUCTS);
   const [selectedProductId, setSelectedProductId] = useState<string>('algodao');
-  const [quantity, setQuantity] = useState<number>(25);
+  const [quantity, setQuantity] = useState<number>(15);
 
-  const product = PRODUCTS.find((p) => p.id === selectedProductId) || PRODUCTS[0];
+  // Sincroniza dinamicamente com a tabela oficial de preços (/api/admin/chatbot/tabela)
+  useEffect(() => {
+    fetch('/api/admin/chatbot/tabela')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.tabela?.produtos && Array.isArray(data.tabela.produtos) && data.tabela.produtos.length > 0) {
+          const mapeados: SimulatorProduct[] = data.tabela.produtos
+            .map((p: any) => {
+              let tiers = Array.isArray(p.pricingTiers) && p.pricingTiers.length > 0
+                ? p.pricingTiers
+                : [];
 
-  // Calcula preço unitário conforme a quantidade
+              let basePrice = Number(p.precoBase) || 0;
+              let minQty = Number(p.quantidadeMinima) || 1;
+
+              // Caso caneca com variações
+              if (Array.isArray(p.variacoes) && p.variacoes.length > 0 && tiers.length === 0) {
+                const v1 = p.variacoes[0];
+                basePrice = Number(v1.preco) || basePrice;
+                tiers = v1.pricingTiers || [{ minQty: 20, maxQty: null, unitPrice: basePrice }];
+                minQty = 20;
+              }
+
+              if (tiers.length === 0 && basePrice > 0) {
+                tiers = [{ minQty, maxQty: null, unitPrice: basePrice }];
+              }
+
+              if (basePrice === 0 && tiers.length > 0) {
+                basePrice = tiers[0].unitPrice;
+              }
+
+              return {
+                id: p.nome.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                name: p.nome.replace(' Personalizada', '').replace(' Personalizado', ''),
+                category: p.categoria || 'Geral',
+                basePrice,
+                minQty,
+                prazo: p.prazoConfeccao,
+                tiers,
+              };
+            })
+            .filter((p: SimulatorProduct) => p.basePrice > 0);
+
+          if (mapeados.length > 0) {
+            setProducts(mapeados);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const product = products.find((p) => p.id === selectedProductId) || products[0];
+
+  // Ajusta quantidade se trocar para item com quantidade mínima maior
+  const handleSelectProduct = (newId: string) => {
+    setSelectedProductId(newId);
+    const target = products.find((p) => p.id === newId);
+    if (target && quantity < target.minQty) {
+      setQuantity(target.minQty);
+    }
+  };
+
+  // Encontra faixa de preço válida correspondente à quantidade atual
   const activeTier = product.tiers.find((t) => {
-    if (t.maxQty === null) return quantity >= t.minQty;
+    if (t.maxQty === null || t.maxQty === undefined) return quantity >= t.minQty;
     return quantity >= t.minQty && quantity <= t.maxQty;
-  }) || product.tiers[0];
+  }) || (quantity < (product.tiers[0]?.minQty || 1) ? product.tiers[0] : product.tiers[product.tiers.length - 1]);
 
-  const unitPrice = activeTier.unitPrice;
+  const unitPrice = activeTier?.unitPrice || product.basePrice;
   const totalPrice = unitPrice * quantity;
-  const baseTotal = product.basePrice * quantity;
-  const savings = Math.max(0, baseTotal - totalPrice);
-  const savingsPercent = baseTotal > 0 ? Math.round((savings / baseTotal) * 100) : 0;
 
-  const presets = [10, 20, 30, 50, 100, 200];
+  // Preço base inicial (primeira faixa ou basePrice oficial)
+  const firstTierPrice = product.tiers[0]?.unitPrice || product.basePrice;
+  const baseTotal = firstTierPrice * quantity;
+  const savings = Math.max(0, baseTotal - totalPrice);
+  const savingsPercent = baseTotal > 0 && savings > 0 ? Math.round((savings / baseTotal) * 100) : 0;
+
+  // Próxima faixa de desconto
+  const nextTier = product.tiers.find((t) => t.minQty > quantity && t.unitPrice < unitPrice);
+  const pecasParaProximoDesconto = nextTier ? nextTier.minQty - quantity : 0;
+
+  // Presets adaptativos baseados no mínimo do produto
+  const presets = [10, 15, 20, 30, 50, 100].filter((n) => n >= product.minQty);
+  if (!presets.includes(product.minQty) && product.minQty > 1) {
+    presets.unshift(product.minQty);
+  }
 
   return (
     <section className="py-16 bg-gradient-to-b from-[#161d30] via-slate-900 to-slate-950 text-white relative overflow-hidden border-y border-slate-800">
@@ -109,46 +209,62 @@ export function QuickQuoteSimulator() {
         <div className="text-center max-w-2xl mx-auto space-y-3 mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider">
             <Calculator className="w-3.5 h-3.5" />
-            <span>SIMULADOR RÁPIDO DE PREÇOS</span>
+            <span>TABELA DE PREÇOS OFICIAL</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-serif font-extrabold text-white tracking-tight">
-            Descubra o valor do seu pedido na hora
+            Simulador Rápido de Preços & Lotes
           </h2>
 
           <p className="text-slate-400 text-sm">
-            Quanto maior o volume, menor o valor por unidade. Arraste ou clique para calcular:
+            Cotação transparente com valores oficiais direto de fábrica. Selecione o produto e veja o valor exato por lote:
           </p>
         </div>
 
         {/* Card do Simulador */}
         <div className="max-w-3xl mx-auto bg-slate-900/90 border border-slate-700/80 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8">
-          {/* Seletor de Produto */}
+          {/* 1. Seletor de Produto */}
           <div className="space-y-2.5">
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-              1. Selecione o Produto Desejado:
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-              {PRODUCTS.map((p) => {
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                1. Selecione o Produto:
+              </label>
+              {product.minQty > 1 && (
+                <span className="text-[11px] font-bold text-amber-400 flex items-center gap-1">
+                  <Info className="w-3 h-3" />
+                  Mínimo deste item: {product.minQty} un
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {products.slice(0, 8).map((p) => {
                 const isSelected = p.id === selectedProductId;
                 return (
                   <button
                     key={p.id}
-                    onClick={() => setSelectedProductId(p.id)}
+                    onClick={() => handleSelectProduct(p.id)}
                     className={`p-3 rounded-2xl border text-xs font-bold transition-all text-center flex flex-col items-center justify-center gap-1 ${
                       isSelected
-                        ? 'bg-blue-500 text-slate-950 border-blue-400 shadow-lg shadow-blue-500/20 scale-105'
+                        ? 'bg-blue-500 text-slate-950 border-blue-400 shadow-lg shadow-blue-500/20 scale-[1.02]'
                         : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
                     }`}
                   >
-                    <span className="leading-tight">{p.name}</span>
+                    <span className="leading-tight truncate w-full">{p.name}</span>
+                    <span
+                      className={`text-[10px] ${
+                        isSelected ? 'text-slate-900 font-semibold' : 'text-slate-500'
+                      }`}
+                    >
+                      A partir de {formatCurrency(p.tiers[p.tiers.length - 1]?.unitPrice || p.basePrice)}
+                    </span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Controle de Quantidade */}
+          {/* 2. Controle de Quantidade */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
@@ -163,8 +279,8 @@ export function QuickQuoteSimulator() {
             {/* Slider */}
             <input
               type="range"
-              min={1}
-              max={300}
+              min={product.minQty}
+              max={200}
               value={quantity}
               onChange={(e) => setQuantity(Number(e.target.value))}
               className="w-full h-2.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-blue-500"
@@ -187,26 +303,44 @@ export function QuickQuoteSimulator() {
                 </button>
               ))}
             </div>
+
+            {/* Alerta de próximo desconto (se houver) */}
+            {nextTier && pecasParaProximoDesconto > 0 && (
+              <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 flex items-center justify-between">
+                <span>
+                  💡 Adicione mais <strong>{pecasParaProximoDesconto} peças</strong> para atingir a faixa de{' '}
+                  <strong>{formatCurrency(nextTier.unitPrice)}/un</strong>!
+                </span>
+                <button
+                  onClick={() => setQuantity(nextTier.minQty)}
+                  className="ml-2 px-2 py-0.5 rounded bg-blue-500 text-slate-950 font-bold text-[11px] hover:bg-blue-400"
+                >
+                  Ajustar para {nextTier.minQty}
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Resultado do Cálculo */}
+          {/* 3. Resultado do Cálculo Oficial */}
           <div className="bg-slate-950 rounded-2xl p-5 border border-slate-800 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-left divide-y sm:divide-y-0 sm:divide-x divide-slate-800">
               <div className="sm:pr-4">
                 <span className="text-[11px] text-slate-400 uppercase font-bold block">Valor Unitário</span>
                 <span className="text-2xl font-black text-white">{formatCurrency(unitPrice)}</span>
-                <span className="text-[11px] text-slate-500 block">por peça no lote</span>
+                <span className="text-[11px] text-slate-500 block">
+                  {quantity >= (product.tiers[1]?.minQty || 999) ? 'Preço de atacado' : 'Preço de tabela'}
+                </span>
               </div>
 
               <div className="sm:px-4 pt-3 sm:pt-0">
-                <span className="text-[11px] text-slate-400 uppercase font-bold block">Total Estimado</span>
+                <span className="text-[11px] text-slate-400 uppercase font-bold block">Total do Lote</span>
                 <span className="text-2xl font-black text-emerald-400">{formatCurrency(totalPrice)}</span>
                 <span className="text-[11px] text-slate-500 block">para {quantity} unidades</span>
               </div>
 
               <div className="sm:pl-4 pt-3 sm:pt-0">
-                <span className="text-[11px] text-slate-400 uppercase font-bold block">Economia Progressiva</span>
-                {savingsPercent > 0 ? (
+                <span className="text-[11px] text-slate-400 uppercase font-bold block">Economia no Lote</span>
+                {savings > 0 ? (
                   <>
                     <span className="text-2xl font-black text-amber-400">-{savingsPercent}%</span>
                     <span className="text-[11px] text-emerald-400 font-semibold block">
@@ -215,14 +349,20 @@ export function QuickQuoteSimulator() {
                   </>
                 ) : (
                   <>
-                    <span className="text-sm font-bold text-slate-400 block pt-1">Preço Inicial</span>
-                    <span className="text-[11px] text-slate-500 block">Adicione mais peças p/ desconto</span>
+                    <span className="text-sm font-bold text-slate-400 block pt-1">
+                      {product.tiers.length > 1 ? 'Faixa Inicial' : 'Preço Fixo'}
+                    </span>
+                    <span className="text-[11px] text-slate-500 block">
+                      {product.tiers.length > 1
+                        ? `A partir de ${product.tiers[1].minQty} un sai a ${formatCurrency(product.tiers[1].unitPrice)}`
+                        : 'Melhor preço de fábrica'}
+                    </span>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Selos de Confiança */}
+            {/* Selos de Confiança e Prazo */}
             <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-400">
               <div className="flex items-center gap-1.5">
                 <div className="flex text-amber-400">
@@ -247,7 +387,7 @@ export function QuickQuoteSimulator() {
             </div>
           </div>
 
-          {/* CTA para o Orçamento */}
+          {/* CTA para o Orçamento Oficial */}
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
             <Link
               href={`/orcamento`}
@@ -260,9 +400,9 @@ export function QuickQuoteSimulator() {
 
             <a
               href={`https://wa.me/5518991795656?text=${encodeURIComponent(
-                `Olá! Fiz uma simulação no site para ${quantity} unidades de ${product.name} (aprox. ${formatCurrency(
+                `Olá! Fiz uma simulação no site para ${quantity} unidades de ${product.name} (valor: ${formatCurrency(
                   totalPrice
-                )}) e gostaria de fechar o pedido!`
+                )} | unitário: ${formatCurrency(unitPrice)}) e gostaria de fechar o pedido!`
               )}`}
               target="_blank"
               rel="noopener noreferrer"
