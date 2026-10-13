@@ -3,6 +3,11 @@
   "notificarAtendimentoHumano": true,
   "notificarNovoOrcamento": true,
   "notificarPushWeb": true,
+  "followUpAutomatico": {
+    "ativo": true,
+    "delayHoras": 24,
+    "mensagem": "👋 *Olá, {nome}! Tudo bem por aí?*\n\nPassando para saber se você conseguiu avaliar a proposta do orçamento *#{codigo}* da Tenório Confecções! 👕✨\n\nFicou alguma dúvida sobre os modelos, tecidos ou prazos? Se precisar de ajustes ou quiser ver uma amostra virtual da estampa, é só me falar por aqui! 🚀\n\n🔗 *Acompanhe sua proposta:* https://www.tenorioconfeccoes.shop/acompanhar-orcamento?code={codigo}\n\n_Caso já tenha conversado com nossa equipe, por favor desconsidere esta mensagem._"
+  },
   "fluxoAnuncio": {
     "ativo": true,
     "tituloCampanha": "Campanha Meta Ads - Camisetas Esportivas / Interclasse",

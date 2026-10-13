@@ -1,4 +1,5 @@
 import { Hero } from '@/components/Hero';
+import { QuickQuoteSimulator } from '@/components/QuickQuoteSimulator';
 import { CategoriesSection } from '@/components/CategoriesSection';
 import { DifferentialsSection } from '@/components/DifferentialsSection';
 import { CorporateEventsSection } from '@/components/CorporateEventsSection';
@@ -11,6 +12,7 @@ export default function HomePage() {
   return (
     <div className="space-y-0">
       <Hero />
+      <QuickQuoteSimulator />
       <CategoriesSection />
       <HowItWorks />
       <CorporateEventsSection />

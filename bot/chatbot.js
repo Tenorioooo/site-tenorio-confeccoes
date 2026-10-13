@@ -1464,3 +1464,138 @@ async function enviarHeartbeatParaSite() {
 // Envia o heartbeat a cada 3 segundos continuamente
 setInterval(enviarHeartbeatParaSite, 3000);
 
+// =====================================
+// ROTINA AUTÔNOMA DE FOLLOW-UP PÓS-ORÇAMENTO
+// =====================================
+const CAMINHO_FOLLOW_UPS = path.join(__dirname, "followUpsEnviados.json");
+
+function carregarFollowUpsEnviados() {
+  try {
+    if (fs.existsSync(CAMINHO_FOLLOW_UPS)) {
+      return JSON.parse(fs.readFileSync(CAMINHO_FOLLOW_UPS, "utf-8"));
+    }
+  } catch (e) {}
+  return {};
+}
+
+function registrarFollowUpEnviado(codigo, whatsapp) {
+  try {
+    const dados = carregarFollowUpsEnviados();
+    dados[codigo] = {
+      enviadoEm: new Date().toISOString(),
+      whatsapp,
+    };
+    fs.writeFileSync(CAMINHO_FOLLOW_UPS, JSON.stringify(dados, null, 2), "utf-8");
+  } catch (e) {
+    console.error("Erro ao registrar follow-up:", e.message);
+  }
+}
+
+async function executarRotinaFollowUp() {
+  try {
+    const config = carregarConfigNotificacoes();
+    if (!config.followUpAutomatico || config.followUpAutomatico.ativo === false) {
+      return { executado: false, motivo: "Rotina desativada nas configurações" };
+    }
+    if (botStatus !== "CONNECTED" || !client) {
+      return { executado: false, motivo: "Bot do WhatsApp desconectado" };
+    }
+
+    const delayHoras = Number(config.followUpAutomatico.delayHoras) || 24;
+    const templateMsg = config.followUpAutomatico.mensagem || "";
+    if (!templateMsg) return { executado: false, motivo: "Template de mensagem vazio" };
+
+    const followUpsJaEnviados = carregarFollowUpsEnviados();
+    let listaOrcamentos = [];
+
+    const urls = [
+      "http://localhost:3000/api/quotes",
+      "https://www.tenorioconfeccoes.shop/api/quotes",
+    ];
+
+    for (const url of urls) {
+      try {
+        const resp = await fetch(url, { headers: { "Content-Type": "application/json" } });
+        if (resp.ok) {
+          listaOrcamentos = await resp.json();
+          if (Array.isArray(listaOrcamentos) && listaOrcamentos.length > 0) {
+            break;
+          }
+        }
+      } catch (err) {}
+    }
+
+    if (!Array.isArray(listaOrcamentos) || listaOrcamentos.length === 0) {
+      listaOrcamentos = ultimosOrcamentos.map((u) => ({
+        quoteCode: u.codigo,
+        customerName: u.cliente,
+        whatsapp: u.telefone,
+        createdAt: u.data,
+        status: "Recebido",
+      }));
+    }
+
+    const agora = Date.now();
+    const delayMs = delayHoras * 60 * 60 * 1000;
+    let disparos = 0;
+
+    for (const orc of listaOrcamentos) {
+      if (!orc || !orc.quoteCode || !orc.whatsapp) continue;
+
+      if (followUpsJaEnviados[orc.quoteCode]) continue;
+
+      const st = String(orc.status || "").toLowerCase();
+      if (st.includes("aprovad") || st.includes("conclu") || st.includes("cancelad")) {
+        continue;
+      }
+
+      const criadoEm = new Date(orc.createdAt).getTime();
+      if (isNaN(criadoEm)) continue;
+
+      const tempoDecorrido = agora - criadoEm;
+      if (tempoDecorrido >= delayMs && tempoDecorrido <= delayMs + (72 * 60 * 60 * 1000)) {
+        let cleanPhone = String(orc.whatsapp).replace(/[^0-9]/g, "");
+        if (cleanPhone.length >= 10 && cleanPhone.length <= 11 && !cleanPhone.startsWith("55")) {
+          cleanPhone = "55" + cleanPhone;
+        }
+
+        if (cleanPhone.length >= 12 && cleanPhone.length <= 13) {
+          const wid = cleanPhone + "@c.us";
+          const primeiroNome = (orc.customerName || "Cliente").split(" ")[0];
+          const mensagem = templateMsg
+            .replace(/{nome}/gi, primeiroNome)
+            .replace(/{codigo}/gi, orc.quoteCode);
+
+          try {
+            await client.sendMessage(wid, mensagem);
+            console.log(`🤖 [Follow-Up Automático] Mensagem enviada para ${orc.customerName} (${cleanPhone}) ref. ${orc.quoteCode}`);
+            registrarFollowUpEnviado(orc.quoteCode, cleanPhone);
+            disparos++;
+            await new Promise((r) => setTimeout(r, 4000));
+          } catch (errSend) {
+            console.error(`❌ [Follow-Up Automático] Erro ao enviar para ${cleanPhone}:`, errSend.message);
+          }
+        }
+      }
+    }
+
+    return { executado: true, totalDisparos: disparos };
+  } catch (error) {
+    console.error("❌ [Follow-Up Automático] Erro na rotina:", error.message);
+    return { executado: false, error: error.message };
+  }
+}
+
+// Endpoint manual para testar ou forçar execução de follow-up
+app.post("/api/follow-up/executar", async (req, res) => {
+  try {
+    const resultado = await executarRotinaFollowUp();
+    res.json({ success: true, resultado });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Executa a rotina de follow-up automaticamente a cada 30 minutos
+setInterval(executarRotinaFollowUp, 30 * 60 * 1000);
+
