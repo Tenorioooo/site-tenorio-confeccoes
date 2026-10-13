@@ -28,6 +28,7 @@ import {
   Image as ImageIcon,
   ZoomIn,
   Maximize2,
+  Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/pricing';
@@ -127,7 +128,7 @@ export default function AdminQuotesPage() {
   const [formWhatsapp, setFormWhatsapp] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formCity, setFormCity] = useState('');
-  const [formState, setFormState] = useState('PE');
+  const [formState, setFormState] = useState('SP');
   const [formDesiredDate, setFormDesiredDate] = useState('');
   const [formNotes, setFormNotes] = useState('');
   const [formStatus, setFormStatus] = useState('Recebido');
@@ -252,7 +253,7 @@ export default function AdminQuotesPage() {
     setFormWhatsapp('');
     setFormEmail('');
     setFormCity('');
-    setFormState('PE');
+    setFormState('SP');
     setFormDesiredDate('');
     setFormNotes('');
     setFormStatus('Recebido');
@@ -277,7 +278,7 @@ export default function AdminQuotesPage() {
     setFormWhatsapp(q.whatsapp || '');
     setFormEmail(q.email || '');
     setFormCity(q.city || '');
-    setFormState(q.state || 'PE');
+    setFormState(q.state || 'SP');
     setFormDesiredDate(q.desiredDate || '');
     setFormNotes(q.notes || '');
     setFormStatus(q.status || 'Recebido');
@@ -307,7 +308,7 @@ export default function AdminQuotesPage() {
     setFormWhatsapp(q.whatsapp || '');
     setFormEmail(q.email || '');
     setFormCity(q.city || '');
-    setFormState(q.state || 'PE');
+    setFormState(q.state || 'SP');
     setFormDesiredDate(q.desiredDate || '');
     setFormNotes(q.notes || '');
     setFormStatus('Recebido');
@@ -477,8 +478,24 @@ export default function AdminQuotesPage() {
 
     msg += `\nPodemos dar andamento na confecção do seu pedido? Qualquer dúvida estamos à disposição!`;
 
-    const phone = q.whatsapp.replace(/\D/g, '');
-    return `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`;
+    const clean = q.whatsapp.replace(/\D/g, '');
+    const phone = clean.startsWith('55') ? clean : `55${clean}`;
+    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  };
+
+  // WhatsApp Follow-Up Message Generator (Recuperação de Vendas)
+  const generateWhatsAppFollowUpLink = (q: any) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.tenorioconfeccoes.shop';
+    let msg = `Olá, *${q.customerName}*! Tudo bem por aí? 👋👕\n\n`;
+    msg += `Aqui é da equipe da *Tenório Confecções*!\n\n`;
+    msg += `Passando para saber se você conseguiu avaliar a proposta do orçamento *#${q.quoteCode}*!\n\n`;
+    msg += `Ficou alguma dúvida sobre os modelos, tecidos ou prazos de produção? Se precisar ajustar quantidades, tamanhos ou ver uma amostra virtual da estampa, é só me falar por aqui! 🚀\n\n`;
+    msg += `🔗 *Acompanhe sua proposta online:* ${origin}/acompanhar-orcamento?code=${q.quoteCode}\n\n`;
+    msg += `Podemos dar andamento na produção do seu pedido?`;
+
+    const clean = (q.whatsapp || '').replace(/\D/g, '');
+    const phone = clean.startsWith('55') ? clean : `55${clean}`;
+    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   };
 
   // Filtered quotes list
@@ -762,6 +779,17 @@ export default function AdminQuotesPage() {
                             title="Enviar proposta formatada via WhatsApp"
                           >
                             <MessageSquare className="w-3.5 h-3.5" />
+                          </a>
+
+                          {/* WhatsApp Follow-up Button */}
+                          <a
+                            href={generateWhatsAppFollowUpLink(q)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl transition-all"
+                            title="Enviar Follow-up / Lembrete pós-orçamento no WhatsApp"
+                          >
+                            <Send className="w-3.5 h-3.5" />
                           </a>
 
                           {/* View Details */}
@@ -1060,15 +1088,28 @@ export default function AdminQuotesPage() {
 
             {/* Actions Footer */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800">
-              <a
-                href={generateWhatsAppProposalLink(selectedQuote)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs shadow-lg transition-all"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span>RESPONDER NO WHATSAPP</span>
-              </a>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={generateWhatsAppProposalLink(selectedQuote)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs shadow-lg transition-all"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>RESPONDER PROPOSTA</span>
+                </a>
+
+                <a
+                  href={generateWhatsAppFollowUpLink(selectedQuote)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs shadow-lg transition-all"
+                  title="Enviar mensagem amigável de cobrança/lembrete do orçamento"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>ENVIAR FOLLOW-UP (LEMBRETE)</span>
+                </a>
+              </div>
 
               <div className="flex items-center gap-2">
                 <button

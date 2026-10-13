@@ -1383,6 +1383,30 @@ app.post("/api/test-calculo", (req, res) => {
   }
 });
 
+// 10. Disparo de Mensagem / Follow-up pelo WhatsApp
+app.post("/api/send-message", async (req, res) => {
+  try {
+    const { phone, message } = req.body;
+    if (!phone || !message) {
+      return res.status(400).json({ success: false, error: "Telefone e mensagem são obrigatórios." });
+    }
+    if (botStatus !== "CONNECTED" || !client) {
+      return res.status(503).json({ success: false, error: "WhatsApp não está conectado no momento." });
+    }
+    let cleanPhone = String(phone).replace(/\D/g, "");
+    if (cleanPhone.length >= 10 && cleanPhone.length <= 11 && !cleanPhone.startsWith("55")) {
+      cleanPhone = "55" + cleanPhone;
+    }
+    const wid = cleanPhone + "@c.us";
+    await client.sendMessage(wid, message);
+    console.log(`💬 [WhatsApp API] Mensagem enviada para ${cleanPhone}`);
+    res.json({ success: true, message: "Mensagem enviada com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao enviar mensagem:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Inicialização do Servidor HTTP
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
