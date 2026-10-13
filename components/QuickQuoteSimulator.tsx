@@ -128,12 +128,22 @@ export function QuickQuoteSimulator() {
               let basePrice = Number(p.precoBase) || 0;
               let minQty = Number(p.quantidadeMinima) || 1;
 
-              // Caso caneca com variações
+              // Caso variações (Caneca, Wind Banner, etc)
               if (Array.isArray(p.variacoes) && p.variacoes.length > 0 && tiers.length === 0) {
                 const v1 = p.variacoes[0];
                 basePrice = Number(v1.preco) || basePrice;
-                tiers = v1.pricingTiers || [{ minQty: 20, maxQty: null, unitPrice: basePrice }];
-                minQty = 20;
+                const vTiers = Array.isArray(v1.pricingTiers) && v1.pricingTiers.length > 0
+                  ? v1.pricingTiers
+                  : (Array.isArray(v1.tiers) && v1.tiers.length > 0 ? v1.tiers : []);
+
+                if (vTiers.length > 0) {
+                  tiers = vTiers;
+                  minQty = Number(p.quantidadeMinima) || Number(vTiers[0]?.minQty) || 1;
+                } else {
+                  const isCaneca = p.nome.toLowerCase().includes('caneca');
+                  minQty = Number(p.quantidadeMinima) || (isCaneca ? 20 : 1);
+                  tiers = [{ minQty, maxQty: null, unitPrice: basePrice }];
+                }
               }
 
               if (tiers.length === 0 && basePrice > 0) {
@@ -143,6 +153,9 @@ export function QuickQuoteSimulator() {
               if (basePrice === 0 && tiers.length > 0) {
                 basePrice = tiers[0].unitPrice;
               }
+
+              // Garante que o minQty seja estritamente respeitado
+              minQty = Number(p.quantidadeMinima) || Number(tiers[0]?.minQty) || 1;
 
               return {
                 id: p.nome.toLowerCase().replace(/[^a-z0-9]/g, '-'),
@@ -166,12 +179,19 @@ export function QuickQuoteSimulator() {
 
   const product = products.find((p) => p.id === selectedProductId) || products[0];
 
-  // Ajusta quantidade se trocar para item com quantidade mínima maior
+  // Ajusta quantidade se trocar para item com quantidade mínima maior ou para produto unitário
   const handleSelectProduct = (newId: string) => {
     setSelectedProductId(newId);
     const target = products.find((p) => p.id === newId);
-    if (target && quantity < target.minQty) {
-      setQuantity(target.minQty);
+    if (target) {
+      if (quantity < target.minQty) {
+        setQuantity(target.minQty);
+      } else if (target.id.includes('windbanner') || target.name.toLowerCase().includes('wind banner')) {
+        // Se a quantidade anterior for alta (ex: lote de camisetas), ajusta para 1 unidade que é o padrão de Wind Banner
+        if (quantity > 10) {
+          setQuantity(1);
+        }
+      }
     }
   };
 
@@ -194,10 +214,19 @@ export function QuickQuoteSimulator() {
   const nextTier = product.tiers.find((t) => t.minQty > quantity && t.unitPrice < unitPrice);
   const pecasParaProximoDesconto = nextTier ? nextTier.minQty - quantity : 0;
 
-  // Presets adaptativos baseados no mínimo do produto
-  const presets = [10, 15, 20, 30, 50, 100].filter((n) => n >= product.minQty);
-  if (!presets.includes(product.minQty) && product.minQty > 1) {
-    presets.unshift(product.minQty);
+  // Presets adaptativos baseados no tipo de produto e lote mínimo
+  const isWindBanner = product.id.includes('windbanner') || product.name.toLowerCase().includes('wind banner');
+  const maxSlider = isWindBanner ? 30 : 200;
+
+  let presets: number[] = [];
+  if (isWindBanner) {
+    presets = [1, 2, 3, 5, 10];
+  } else if (product.minQty >= 20) {
+    presets = [20, 30, 50, 100, 200];
+  } else if (product.minQty >= 10) {
+    presets = [10, 15, 20, 30, 50, 100];
+  } else {
+    presets = [1, 5, 10, 15, 20, 30, 50];
   }
 
   return (
@@ -280,7 +309,7 @@ export function QuickQuoteSimulator() {
             <input
               type="range"
               min={product.minQty}
-              max={200}
+              max={maxSlider}
               value={quantity}
               onChange={(e) => setQuantity(Number(e.target.value))}
               className="w-full h-2.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-blue-500"
