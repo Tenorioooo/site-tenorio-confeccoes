@@ -856,11 +856,10 @@ function interpretarRespostaQuestionario(textoOriginal, nomeContato) {
   // 5. ESTAMPA / PERSONALIZAÇÃO
   // =====================================
   let estampa = "Silk Screen / Personalização Têxtil";
-  if (respostasPorIndice[4] && (respostasPorIndice[4].toLowerCase().includes("silk") || respostasPorIndice[4].toLowerCase().includes("bordad") || respostasPorIndice[4].toLowerCase().includes("sublim"))) {
+  if (respostasPorIndice[4] && (respostasPorIndice[4].toLowerCase().includes("silk") || respostasPorIndice[4].toLowerCase().includes("dtf") || respostasPorIndice[4].toLowerCase().includes("sublim"))) {
     estampa = respostasPorIndice[4].replace(/[*_~]/g, "").trim();
   } else {
-    if (textoLimpo.includes("bordado")) estampa = "Bordado Computadorizado";
-    else if (textoLimpo.includes("sublimacao") || textoLimpo.includes("sublimação") || textoLimpo.includes("total")) estampa = "Sublimação Total";
+    if (textoLimpo.includes("sublimacao") || textoLimpo.includes("sublimação") || textoLimpo.includes("total")) estampa = "Sublimação Total";
     else if (textoLimpo.includes("dtf")) estampa = "Estampa DTF";
     else if (textoLimpo.includes("silk")) estampa = "Silk Screen";
   }

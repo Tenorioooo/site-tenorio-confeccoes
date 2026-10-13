@@ -20,7 +20,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Kits para Terceirão & Formaturas | Tenório Confecções',
   description:
-    'Moletons bordados, camisetas personalizadas, canecas de alumínio com tirante e bandeiras para Terceirão e formaturas. Nomes e números individuais para cada aluno. Faça a cotação da sua sala!',
+    'Moletons personalizados, camisetas premium, canecas de alumínio com tirante e bandeiras para Terceirão e formaturas. Nomes e números individuais para cada aluno. Faça a cotação da sua sala!',
   keywords: [
     'terceirao',
     'moletom terceirao',
@@ -42,7 +42,7 @@ export default function TerceiraoPage() {
       tagColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
       description: 'O pacote definitivo para marcar o último ano da sua turma com estilo e qualidade máxima.',
       items: [
-        'Moletom Canguru Flanelado com capuz e bordado/DTF de alta definição',
+        'Moletom Canguru Flanelado com capuz e estampa DTF HD de alta definição',
         'Camiseta 100% Algodão Penteado ou Dry-Fit com estampa da sala',
         'Caneca de Alumínio 500ml personalizada com tirante exclusivo',
         'Bandeirão gigante da turma para fotos e jogos escolares',
@@ -70,9 +70,9 @@ export default function TerceiraoPage() {
       description: 'Moletom pesado com felpa interna super macia para curtir o ano inteiro quentinho.',
       items: [
         'Moletom Canguru Flanelado premium com bolso frontal',
-        'Bordado computadorizado com pontos fechados e sem fiapos',
+        'Estampa em DTF HD ultra resistente com cores vivas e sem desbotar',
         'Capuz forrado com ilhós e cordão ajustável grosso',
-        'Opção de nome individual bordado ou estampado no punho/costas',
+        'Opção de nome individual personalizado no punho ou costas',
       ],
       popular: false,
     },
@@ -128,7 +128,7 @@ export default function TerceiraoPage() {
             </h1>
 
             <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
-              Moletons bordados, camisetas personalizadas, canecas de alumínio com tirante e bandeirões para marcar a história da sua turma. Confeccionamos sob medida com nomes e números individuais!
+              Moletons personalizados, camisetas premium, canecas de alumínio com tirante e bandeirões para marcar a história da sua turma. Confeccionamos sob medida com nomes e números individuais!
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">

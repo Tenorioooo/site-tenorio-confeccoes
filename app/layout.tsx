@@ -57,7 +57,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'castilho sp',
       'araçatuba sp',
       'estamparia personalizada',
-      'silk screen dtf bordado',
+      'silk screen dtf serigrafia',
       'uniformes corporativos',
     ],
     authors: [{ name: 'Tenório Confecções' }],

@@ -54,7 +54,7 @@ async function main() {
       slug: 'camiseta-personalizada-algodao',
       category: 'Camisetas',
       description: 'Camiseta em malha penteada 100% algodão fio 30.1. Toque macio, excelente caimento e altíssima durabilidade. Ideal para eventos, festas, formaturas e marcas próprias.',
-      details: 'Gola careca reforçada, costura ombro a ombro. Disponível em Silk Screen, DTF HD e Bordado.',
+      details: 'Gola careca reforçada, costura ombro a ombro. Disponível em Silk Screen e DTF HD.',
       featured: true,
       availableSizes: JSON.stringify(['PP', 'P', 'M', 'G', 'GG', 'XGG']),
       availableColors: JSON.stringify(['Branco', 'Preto', 'Azul Marinho', 'Cinza Mescla', 'Vermelho', 'Verde']),
@@ -146,7 +146,7 @@ async function main() {
       slug: 'camisa-polo-uniforme-corporativo',
       category: 'Uniformes',
       description: 'Camisa Polo Piquet Misto ou Algodão. Confere elegância e profissionalismo para a equipe de vendas, atendimento e escritórios.',
-      details: 'Bordado computadorizado de alta precisão no peito e mangas.',
+      details: 'Personalização em DTF HD ou Silk Screen de alta definição no peito e mangas.',
       featured: true,
       availableSizes: JSON.stringify(['P', 'M', 'G', 'GG', 'XGG']),
       availableColors: JSON.stringify(['Azul Marinho', 'Preto', 'Branco', 'Cinza', 'Verde']),
@@ -309,7 +309,7 @@ async function main() {
     {
       name: 'CarlosEduardo M.',
       city: 'Caruaru - PE',
-      text: 'Fizemos 150 camisetas para o evento da nossa empresa. A qualidade do algodão e a precisão do bordado superaram todas as expectativas!',
+      text: 'Fizemos 150 camisetas para o evento da nossa empresa. A qualidade do algodão e a precisão da estampa superaram todas as expectativas!',
       rating: 5,
     },
     {

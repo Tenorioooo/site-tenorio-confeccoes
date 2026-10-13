@@ -29,7 +29,7 @@ export async function GET() {
         "availableSizes" TEXT NOT NULL DEFAULT '["PP","P","M","G","GG","XGG"]',
         "availableColors" TEXT NOT NULL DEFAULT '["Branco","Preto","Azul Marinho","Cinza","Vermelho","Amarelo"]',
         "customizationPositions" TEXT DEFAULT '["Frente","Costas","Manga Direita","Manga Esquerda","Nome Individual","Número Individual","Outro Local"]',
-        "printTechniques" TEXT DEFAULT 'Silk Screen, Sublimação, DTF HD, Bordado',
+        "printTechniques" TEXT DEFAULT 'Silk Screen, Sublimação, DTF HD',
         "leadTime" TEXT DEFAULT '7 a 15 dias úteis',
         "minQuantity" TEXT DEFAULT '10 unidades',
         "priceRange" TEXT DEFAULT 'Consulte valor por quantidade',

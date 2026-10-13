@@ -183,7 +183,7 @@ export default function ChatbotAdminTab() {
         'uniforme para empresa',
         'uniformes corporativos',
         'uniforme de trabalho',
-        'polo bordada',
+        'polo corporativa',
         'camisa polo empresa',
         'uniforme empresarial'
       ],
@@ -578,8 +578,8 @@ export default function ChatbotAdminTab() {
         nome: 'Campanha Corporativa - Uniformes para Empresas',
         tipoAcao: 'QUESTIONARIO_ORCAMENTO',
         origemLead: 'Campanha Empresas & B2B',
-        gatilhos: ['uniforme para empresa', 'uniforme corporativo', 'polo bordada', 'camisa polo empresa', 'uniforme empresarial'],
-        mensagem: `👋 *{saudacao}! Muito bem-vindo(a) à Tenório Confecções!* 👔🏢\n\nCuidamos da identidade visual e uniformização da sua equipe com alta durabilidade e acabamento profissional.\n\n📋 *Para prepararmos sua proposta comercial sob medida:*\n\n1️⃣ *Quais modelos você procura?* (Ex: Camisas Polo Piquet, Camisetas Algodão, Aventais, Jalecos)\n2️⃣ *Quantidade estimada de peças?* (Ex: 15, 30, 60, 100+ peças)\n3️⃣ *Sua empresa já possui o logotipo vetorizado ou em foto?*\n4️⃣ *Deseja logotipo bordado ou estampado?*\n5️⃣ *Qual a sua cidade / estado?*\n\n✍️ *Envie essas informações* para montarmos sua proposta na hora!`
+        gatilhos: ['uniforme para empresa', 'uniforme corporativo', 'polo corporativa', 'camisa polo empresa', 'uniforme empresarial'],
+        mensagem: `👋 *{saudacao}! Muito bem-vindo(a) à Tenório Confecções!* 👔🏢\n\nCuidamos da identidade visual e uniformização da sua equipe com alta durabilidade e acabamento profissional.\n\n📋 *Para prepararmos sua proposta comercial sob medida:*\n\n1️⃣ *Quais modelos você procura?* (Ex: Camisas Polo Piquet, Camisetas Algodão, Aventais, Jalecos)\n2️⃣ *Quantidade estimada de peças?* (Ex: 15, 30, 60, 100+ peças)\n3️⃣ *Sua empresa já possui o logotipo vetorizado ou em foto?*\n4️⃣ *Deseja logotipo em DTF HD ou Silk Screen?*\n5️⃣ *Qual a sua cidade / estado?*\n\n✍️ *Envie essas informações* para montarmos sua proposta na hora!`
       });
     } else if (tipo === 'algodao') {
       setFluxoForm({
@@ -1474,8 +1474,8 @@ export default function ChatbotAdminTab() {
                     nome: 'Campanha Corporativa - Uniformes para Empresas',
                     tipoAcao: 'QUESTIONARIO_ORCAMENTO',
                     origemLead: 'Campanha Empresas & B2B',
-                    gatilhos: ['uniforme para empresa', 'uniforme corporativo', 'polo bordada', 'camisa polo empresa', 'uniforme empresarial'],
-                    mensagem: `👋 *{saudacao}! Muito bem-vindo(a) à Tenório Confecções!* 👔🏢\n\nCuidamos da identidade visual e uniformização da sua equipe com alta durabilidade e acabamento profissional.\n\n📋 *Para prepararmos sua proposta comercial sob medida:*\n\n1️⃣ *Quais modelos você procura?* (Ex: Camisas Polo Piquet, Camisetas Algodão, Aventais, Jalecos)\n2️⃣ *Quantidade estimada de peças?* (Ex: 15, 30, 60, 100+ peças)\n3️⃣ *Sua empresa já possui o logotipo vetorizado ou em foto?*\n4️⃣ *Deseja logotipo bordado ou estampado?*\n5️⃣ *Qual a sua cidade / estado?*\n\n✍️ *Envie essas informações* para montarmos sua proposta na hora!`
+                    gatilhos: ['uniforme para empresa', 'uniforme corporativo', 'polo corporativa', 'camisa polo empresa', 'uniforme empresarial'],
+                    mensagem: `👋 *{saudacao}! Muito bem-vindo(a) à Tenório Confecções!* 👔🏢\n\nCuidamos da identidade visual e uniformização da sua equipe com alta durabilidade e acabamento profissional.\n\n📋 *Para prepararmos sua proposta comercial sob medida:*\n\n1️⃣ *Quais modelos você procura?* (Ex: Camisas Polo Piquet, Camisetas Algodão, Aventais, Jalecos)\n2️⃣ *Quantidade estimada de peças?* (Ex: 15, 30, 60, 100+ peças)\n3️⃣ *Sua empresa já possui o logotipo vetorizado ou em foto?*\n4️⃣ *Deseja logotipo em DTF HD ou Silk Screen?*\n5️⃣ *Qual a sua cidade / estado?*\n\n✍️ *Envie essas informações* para montarmos sua proposta na hora!`
                   })}
                   className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-pink-500/50 hover:bg-slate-800/50 text-left transition group flex items-start justify-between"
                 >
@@ -1484,7 +1484,7 @@ export default function ChatbotAdminTab() {
                       👔 Uniformes Corporativos & Polos
                     </p>
                     <p className="text-[11px] text-slate-400 mt-1">
-                      Polos bordadas, camisas para empresas e B2B.
+                      Polos corporativas, camisas para empresas e B2B.
                     </p>
                   </div>
                   <Plus className="h-4 w-4 text-slate-500 group-hover:text-pink-400 mt-0.5" />
@@ -2644,7 +2644,7 @@ export default function ChatbotAdminTab() {
                         adicionarGatilhoModal();
                       }
                     }}
-                    placeholder="Digite um termo e tecle Enter (ex: vi o anuncio, interclasse, polo bordada...)"
+                    placeholder="Digite um termo e tecle Enter (ex: vi o anuncio, interclasse, polo corporativa...)"
                     className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-pink-500"
                   />
                   <button

@@ -103,7 +103,7 @@ function getPadraoFluxos() {
         "uniforme para empresa",
         "uniformes corporativos",
         "uniforme de trabalho",
-        "polo bordada",
+        "polo corporativa",
         "camisa polo empresa",
         "uniforme empresarial"
       ],
@@ -874,7 +874,7 @@ client.on("message_create", async (msg) => {
         `1️⃣ *Tipo de produto:* (ex: Camisetas algodão/dry-fit, Camisas Polo, Moletons, Jalecos, Coletes, Calças, Bonés, etc.)\n` +
         `2️⃣ *Segmento:* (Escolar, Universitário, Corporativo/Empresarial ou Evento)\n` +
         `3️⃣ *Quantidade estimada:* (ex: 15, 50, 100+ peças)\n` +
-        `4️⃣ *Tipo de personalização:* (Bordado, Silk Screen, DTF/Sublimação ou não sabe ainda)\n` +
+        `4️⃣ *Tipo de personalização:* (Silk Screen, DTF HD, Sublimação ou não sabe ainda)\n` +
         `5️⃣ *Possui a arte/logo?* (Se sim, pode enviar a imagem logo em seguida)\n\n` +
         `✍️ *Responda tudo em uma única mensagem* que nosso robô já vai calcular sua cotação completa na hora!\n\n` +
         `_Digite *menu* para retornar ao início._`;

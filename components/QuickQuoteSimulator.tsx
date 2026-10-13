@@ -51,7 +51,7 @@ const INITIAL_PRODUCTS: SimulatorProduct[] = [
   },
   {
     id: 'polo',
-    name: 'Camisa Polo Bordada',
+    name: 'Camisa Polo Personalizada',
     category: 'Corporativo',
     basePrice: 74.9,
     minQty: 1,

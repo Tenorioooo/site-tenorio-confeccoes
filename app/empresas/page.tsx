@@ -23,11 +23,11 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Uniformes Corporativos & B2B | Tenório Confecções',
   description:
-    'Uniformes profissionais, camisas polo bordadas, moletons corporativos e brindes para empresas. Faturamento no boleto para CNPJ, emissão de NF-e e entrega para todo o Brasil. Solicite uma proposta!',
+    'Uniformes profissionais, camisas polo corporativas, moletons e brindes para empresas. Faturamento no boleto para CNPJ, emissão de NF-e e entrega para todo o Brasil. Solicite uma proposta!',
   keywords: [
     'uniformes corporativos',
     'uniformes para empresas',
-    'camisa polo bordada',
+    'camisa polo corporativa',
     'camisetas personalizadas cnpj',
     'uniformes profissionais',
     'uniformes andradina',
@@ -38,9 +38,9 @@ export const metadata: Metadata = {
 export default function CorporatePage() {
   const corporateProducts = [
     {
-      title: 'Camisas Polo Bordadas',
+      title: 'Camisas Polo Corporativas',
       badge: 'Líder Corporativo',
-      desc: 'Tecido Piquet clássico ou Dry Confort com bordado computadorizado no peito e manga. Modelagem refinada para gerência e equipe de vendas.',
+      desc: 'Tecido Piquet clássico ou Dry Confort com personalização em DTF HD ou Silk Screen de alta definição no peito e manga. Modelagem refinada para gerência e equipe de vendas.',
       tags: ['Piquet 50/50', 'Algodão Nobre', 'Gola Estruturada'],
     },
     {
@@ -52,8 +52,8 @@ export default function CorporatePage() {
     {
       title: 'Moletons & Corta-Vento',
       badge: 'Inverno Corporativo',
-      desc: 'Moletons canguru e careca flanelados com bordado de alta densidade. Mantenha sua equipe aquecida e padronizada nos meses frios.',
-      tags: ['Flanelado Pesado', 'Bordado HD', 'Acabamento Ribana'],
+      desc: 'Moletons canguru e careca flanelados com estampa DTF HD de alta durabilidade e definição. Mantenha sua equipe aquecida e padronizada nos meses frios.',
+      tags: ['Flanelado Pesado', 'DTF HD', 'Acabamento Ribana'],
     },
     {
       title: 'Kits para Feiras & Convenções',
@@ -77,7 +77,7 @@ export default function CorporatePage() {
     {
       icon: <RotateCcw className="w-6 h-6 text-purple-400" />,
       title: 'Reposição Sem Pedido Mínimo',
-      desc: 'Contratou um funcionário novo? Nós mantemos sua matriz de bordado e produzimos novas peças no mesmo padrão.',
+      desc: 'Contratou um funcionário novo? Nós mantemos seus arquivos e artes guardados para produzir novas reposições no mesmo padrão exato.',
     },
     {
       icon: <Truck className="w-6 h-6 text-amber-400" />,
@@ -88,24 +88,24 @@ export default function CorporatePage() {
 
   const techniques = [
     {
-      name: 'Bordado Computadorizado',
-      indicated: 'Polos, Moletons e Bonés',
-      benefit: 'Sofisticação e durabilidade eterna que não desbota nem desgasta.',
+      name: 'DTF Digital HD',
+      indicated: 'Polos, Moletons e Camisetas',
+      benefit: 'Cores vivas sem limite de tons, alta elasticidade, altíssima durabilidade e toque suave.',
     },
     {
       name: 'Silk Screen (Serigrafia)',
       indicated: 'Grandes Lotes de Camisetas',
-      benefit: 'O melhor custo por unidade para pedidos acima de 30 peças.',
-    },
-    {
-      name: 'DTF Digital HD',
-      indicated: 'Logotipos Coloridos e Detalhados',
-      benefit: 'Cores vivas sem limite de tons, alta elasticidade e toque suave.',
+      benefit: 'O melhor custo por unidade para pedidos acima de 30 peças com tintas nobres.',
     },
     {
       name: 'Sublimação Total',
       indicated: 'Uniformes Esportivos e Abadás',
-      benefit: 'Impressão direta na fibra do tecido sem relevo, 100% respirável.',
+      benefit: 'Impressão direta na fibra do tecido sem relevo, 100% respirável e cores permanentes.',
+    },
+    {
+      name: 'Transfer Térmico & Vinil',
+      indicated: 'Numerações e Detalhes Especiais',
+      benefit: 'Aplicação precisa para identificação nominal, números e elementos gráficos exclusivos.',
     },
   ];
 
@@ -130,7 +130,7 @@ export default function CorporatePage() {
             </h1>
 
             <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
-              Uniformes corporativos, camisas polo bordadas, moletons de inverno e brindes promocionais com alto rigor têxtil, pontualidade e condições comerciais diferenciadas para empresas de todos os portes.
+              Uniformes corporativos, camisas polo personalizadas, moletons de inverno e brindes promocionais com alto rigor têxtil, pontualidade e condições comerciais diferenciadas para empresas de todos os portes.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">

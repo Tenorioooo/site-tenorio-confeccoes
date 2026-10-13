@@ -71,10 +71,10 @@ const mensagemMultiplosItens = `*SOLICITAÇÃO DE ORÇAMENTO — TENÓRIO CONFEC
    • Estampa: Logo Empresa Frente e Costas
    • Locais: Frente e Costas
 
-*2. Camisa Polo Piquet Bordada*
+*2. Camisa Polo Piquet Personalizada*
    • Quantidade: 20 unidades
    • Grade de Tamanhos/Variações: M: 10 | GG: 10
-   • Estampa: Bordado Peito
+   • Estampa: DTF Peito
    • Locais: Frente
 
 *OBSERVAÇÕES GERAIS:* Entrega urgente para feira empresarial

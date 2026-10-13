@@ -10,7 +10,7 @@ export function DifferentialsSection() {
     },
     {
       title: 'Qualidade Premium',
-      description: 'Tecidos de alto padrão, costura reforçada e técnicas de impressão (Silk, Sublimação, DTF, Bordado) duráveis.',
+      description: 'Tecidos de alto padrão, costura reforçada e técnicas de impressão (Silk Screen, Sublimação, DTF HD) duráveis.',
       icon: Award,
     },
     {

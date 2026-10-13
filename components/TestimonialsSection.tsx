@@ -18,7 +18,7 @@ const DEFAULT_TESTIMONIALS: TestimonialItem[] = [
   {
     name: 'Carlos Eduardo M.',
     city: 'Andradina - SP',
-    text: 'Excelente qualidade e acabamento impecável! As camisetas da nossa empresa ficaram exatamente como projetamos, e o bordado tem alta definição.',
+    text: 'Excelente qualidade e acabamento impecável! As camisetas da nossa empresa ficaram exatamente como projetamos, e a estampa em DTF tem altíssima definição.',
     rating: 5,
     tag: 'Empresa',
   },

@@ -372,7 +372,7 @@ export default function ProductDetailPage() {
                 <div>
                   <span className="text-slate-500">Técnicas de Impressão:</span>
                   <p className="font-semibold text-white mt-0.5">
-                    {product.printTechniques || 'Silk Screen, Sublimação, DTF HD, Bordado'}
+                    {product.printTechniques || 'Silk Screen, Sublimação, DTF HD'}
                   </p>
                 </div>
                 <div>

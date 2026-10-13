@@ -79,7 +79,7 @@ export async function POST(request: Request) {
         availableSizes: typeof availableSizes === 'string' ? availableSizes : JSON.stringify(availableSizes || []),
         availableColors: typeof availableColors === 'string' ? availableColors : JSON.stringify(availableColors || []),
         customizationPositions: typeof customizationPositions === 'string' ? customizationPositions : JSON.stringify(customizationPositions || []),
-        printTechniques: printTechniques || 'Silk Screen, Sublimação, DTF HD, Bordado',
+        printTechniques: printTechniques || 'Silk Screen, Sublimação, DTF HD',
         leadTime: leadTime || '7 a 15 dias úteis',
         minQuantity: minQuantity || '10 unidades',
         priceRange: priceRange || 'Consulte o valor por quantidade',

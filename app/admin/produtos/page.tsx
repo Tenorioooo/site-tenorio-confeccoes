@@ -167,7 +167,7 @@ export default function AdminProductsPage() {
   const [category, setCategory] = useState('Camisetas');
   const [description, setDescription] = useState('');
   const [details, setDetails] = useState('');
-  const [printTechniques, setPrintTechniques] = useState('Silk Screen, Sublimação, DTF HD, Bordado');
+  const [printTechniques, setPrintTechniques] = useState('Silk Screen, Sublimação, DTF HD');
   const [leadTime, setLeadTime] = useState('7 a 15 dias úteis');
   const [minQuantity, setMinQuantity] = useState('10 unidades');
   const [priceRange, setPriceRange] = useState('Consulte o valor por quantidade');
@@ -228,7 +228,7 @@ export default function AdminProductsPage() {
     setCategory('Camisetas');
     setDescription('');
     setDetails('');
-    setPrintTechniques('Silk Screen, Sublimação, DTF HD, Bordado');
+    setPrintTechniques('Silk Screen, Sublimação, DTF HD');
     setLeadTime('7 a 15 dias úteis');
     setMinQuantity('10 unidades');
     setPriceRange('Consulte o valor por quantidade');
@@ -257,7 +257,7 @@ export default function AdminProductsPage() {
     setCategory(prod.category || 'Camisetas');
     setDescription(prod.description || '');
     setDetails(prod.details || '');
-    setPrintTechniques(prod.printTechniques || 'Silk Screen, Sublimação, DTF HD, Bordado');
+    setPrintTechniques(prod.printTechniques || 'Silk Screen, Sublimação, DTF HD');
     setLeadTime(prod.leadTime || '7 a 15 dias úteis');
     setMinQuantity(prod.minQuantity || '10 unidades');
     setPriceRange(prod.priceRange || 'Consulte o valor por quantidade');
@@ -986,7 +986,7 @@ export default function AdminProductsPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="Ex: Silk Screen, Sublimação Total, DTF HD, Bordado Computadorizado"
+                      placeholder="Ex: Silk Screen, Sublimação Total, DTF HD, Transfer Térmico"
                       value={printTechniques}
                       onChange={(e) => setPrintTechniques(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:border-blue-400 focus:outline-none"
