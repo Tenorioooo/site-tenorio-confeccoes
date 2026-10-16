@@ -29,7 +29,11 @@ import {
   HelpCircle,
   Megaphone,
   Sparkles,
-  Copy
+  Copy,
+  Play,
+  Pause,
+  PhoneCall,
+  MessageCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -93,6 +97,11 @@ interface ClienteAguardando {
   data: string;
   status: 'AGUARDANDO' | 'ATENDIDO';
   concluidoEm?: string;
+  roboPausado?: boolean;
+  pausadoEm?: string;
+  reativadoEm?: string;
+  ultimaMensagem?: string;
+  ultimaMensagemEm?: string;
 }
 
 interface StatusResponse {
@@ -132,9 +141,13 @@ export default function ChatbotAdminTab() {
   const [tabela, setTabela] = useState<TabelaPrecos | null>(null);
   const [botUrl, setBotUrl] = useState('http://localhost:3001');
 
-  // Filtros de atendimento humano
+  // Filtros e controle de atendimento humano / pausa do robô
   const [buscaHumano, setBuscaHumano] = useState('');
-  const [filtroStatusHumano, setFiltroStatusHumano] = useState<'TODOS' | 'AGUARDANDO' | 'ATENDIDO'>('AGUARDANDO');
+  const [filtroStatusHumano, setFiltroStatusHumano] = useState<'TODOS' | 'PAUSADO' | 'ATIVO' | 'AGUARDANDO' | 'ATENDIDO'>('TODOS');
+  const [modalNovoContatoPausa, setModalNovoContatoPausa] = useState(false);
+  const [novoTelefonePausa, setNovoTelefonePausa] = useState('');
+  const [novoNomePausa, setNovoNomePausa] = useState('');
+  const [novoMotivoPausa, setNovoMotivoPausa] = useState('');
 
   // Configurações de Notificação
   const [adminPhone, setAdminPhone] = useState('');
@@ -781,12 +794,82 @@ export default function ChatbotAdminTab() {
     }
   };
 
-  const concluirAtendimento = async (id: string) => {
+  const reativarRobo = async (cli: ClienteAguardando) => {
     try {
       setActionLoading(true);
-      const res = await fetch(`${botUrl}/api/atendimento/${id}/concluir`, { method: 'POST' });
+      const res = await fetch('/api/admin/chatbot/atendimento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reativar', id: cli.id, telefone: cli.telefone })
+      });
+      try {
+        await fetch(`${botUrl}/api/atendimento/${cli.id}/reativar`, { method: 'POST' }).catch(() => {});
+      } catch (e) {}
+
       if (res.ok) {
-        toast.success('Atendimento concluído!');
+        toast.success(`▶️ Robô reativado para ${cli.nome || cli.telefone}! Respostas automáticas retomadas.`);
+        carregarStatus();
+      } else {
+        toast.error('Não foi possível reativar o robô.');
+      }
+    } catch (e: any) {
+      toast.error('Erro ao reativar robô: ' + (e?.message || 'Falha de conexão'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const pausarRobo = async (cli: ClienteAguardando) => {
+    try {
+      setActionLoading(true);
+      const res = await fetch('/api/admin/chatbot/atendimento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pausar', id: cli.id, telefone: cli.telefone })
+      });
+      try {
+        await fetch(`${botUrl}/api/atendimento/${cli.id}/pausar`, { method: 'POST' }).catch(() => {});
+      } catch (e) {}
+
+      if (res.ok) {
+        toast.success(`⏸️ Robô silenciado para ${cli.nome || cli.telefone}! Ele não enviará mensagens automáticas.`);
+        carregarStatus();
+      } else {
+        toast.error('Não foi possível pausar o robô.');
+      }
+    } catch (e: any) {
+      toast.error('Erro ao pausar robô: ' + (e?.message || 'Falha de conexão'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const toggleRoboContato = async (cli: ClienteAguardando) => {
+    if (cli.roboPausado !== false) {
+      await reativarRobo(cli);
+    } else {
+      await pausarRobo(cli);
+    }
+  };
+
+  const concluirAtendimento = async (id: string, reativarBot: boolean = true) => {
+    try {
+      setActionLoading(true);
+      const res = await fetch('/api/admin/chatbot/atendimento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'concluir', id, reativarBot })
+      });
+      try {
+        await fetch(`${botUrl}/api/atendimento/${id}/concluir`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reativarBot })
+        }).catch(() => {});
+      } catch (e) {}
+
+      if (res.ok) {
+        toast.success(reativarBot ? '✅ Atendimento concluído e respostas automáticas liberadas!' : '✅ Atendimento marcado como concluído!');
         carregarStatus();
       }
     } catch (e) {
@@ -799,13 +882,66 @@ export default function ChatbotAdminTab() {
   const removerAtendimento = async (id: string) => {
     try {
       setActionLoading(true);
-      const res = await fetch(`${botUrl}/api/atendimento/${id}`, { method: 'DELETE' });
+      const res = await fetch('/api/admin/chatbot/atendimento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'remover', id })
+      });
+      try {
+        await fetch(`${botUrl}/api/atendimento/${id}`, { method: 'DELETE' }).catch(() => {});
+      } catch (e) {}
+
       if (res.ok) {
-        toast.success('Removido da fila!');
+        toast.success('Removido da fila com sucesso!');
         carregarStatus();
       }
     } catch (e) {
       toast.error('Erro ao remover da fila');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const salvarPausaManual = async () => {
+    const tel = novoTelefonePausa.replace(/[^0-9]/g, '');
+    if (!tel || tel.length < 10) {
+      toast.error('Informe um número de WhatsApp válido com DDD!');
+      return;
+    }
+    try {
+      setActionLoading(true);
+      const res = await fetch('/api/admin/chatbot/atendimento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'adicionar',
+          telefone: tel,
+          nome: novoNomePausa.trim() || 'Contato Manual',
+          motivo: novoMotivoPausa.trim() || 'Pausa manual solicitada via Painel'
+        })
+      });
+      try {
+        await fetch(`${botUrl}/api/atendimento/adicionar-pausa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telefone: tel,
+            nome: novoNomePausa.trim() || 'Contato Manual',
+            motivo: novoMotivoPausa.trim() || 'Pausa manual solicitada via Painel'
+          })
+        }).catch(() => {});
+      } catch (e) {}
+
+      if (res.ok) {
+        toast.success('⏸️ Robô pausado para o número especificado!');
+        setNovoTelefonePausa('');
+        setNovoNomePausa('');
+        setNovoMotivoPausa('');
+        setModalNovoContatoPausa(false);
+        carregarStatus();
+      }
+    } catch (e: any) {
+      toast.error('Erro ao pausar número: ' + (e?.message || 'Falha'));
     } finally {
       setActionLoading(false);
     }
@@ -1097,13 +1233,19 @@ export default function ChatbotAdminTab() {
   };
 
   const clientesFiltrados = (data?.clientesAguardando || []).filter((item) => {
-    if (filtroStatusHumano !== 'TODOS' && item.status !== filtroStatusHumano) return false;
+    const isPausado = item.roboPausado !== false;
+    if (filtroStatusHumano === 'PAUSADO' && !isPausado) return false;
+    if (filtroStatusHumano === 'ATIVO' && isPausado) return false;
+    if (filtroStatusHumano === 'AGUARDANDO' && item.status !== 'AGUARDANDO') return false;
+    if (filtroStatusHumano === 'ATENDIDO' && item.status !== 'ATENDIDO') return false;
+
     if (!buscaHumano) return true;
     const query = buscaHumano.toLowerCase();
     const nome = (item.nome || '').toLowerCase();
     const tel = (item.telefone || '').toLowerCase();
     const motivo = (item.motivo || '').toLowerCase();
-    return nome.includes(query) || tel.includes(query) || motivo.includes(query);
+    const msg = (item.ultimaMensagem || '').toLowerCase();
+    return nome.includes(query) || tel.includes(query) || motivo.includes(query) || msg.includes(query);
   });
 
   return (
@@ -1181,9 +1323,9 @@ export default function ChatbotAdminTab() {
           >
             <Users className="h-4 w-4" />
             Atendimento Humano
-            {(data?.stats?.totalAguardandoHumano || 0) > 0 && (
-              <span className="ml-1 px-2 py-0.2 rounded-full text-[11px] font-bold bg-amber-500 text-slate-950 animate-bounce">
-                {data?.stats?.totalAguardandoHumano}
+            {((data?.clientesAguardando || []).filter((c) => c.roboPausado !== false).length > 0) && (
+              <span className="ml-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500 text-slate-950 animate-pulse">
+                {(data?.clientesAguardando || []).filter((c) => c.roboPausado !== false).length}
               </span>
             )}
           </button>
@@ -1792,9 +1934,148 @@ export default function ChatbotAdminTab() {
         </div>
       )}
 
-      {/* ABA 2: ATENDIMENTO HUMANO COM FILTROS */}
+      {/* ABA 2: ATENDIMENTO HUMANO & CONTROLE DE RESPOSTAS AUTOMÁTICAS */}
       {activeTab === 'humano' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {/* BANNER PRINCIPAL COM MÉTRICAS & CONTROLE */}
+          <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-sm space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/10">
+                  <Users className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                    Fila de Atendimento Humano & Silenciador do Robô
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      {(data?.clientesAguardando || []).filter((c) => c.roboPausado !== false).length} silenciados
+                    </span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Quando um cliente pede atendente (Opção 5), o robô para de responder automaticamente para você conversar no WhatsApp. Controle quando reativar ou pausar o robô para cada contato abaixo.
+                  </p>
+                </div>
+              </div>
+
+              {/* BOTÃO PARA ADICIONAR PAUSA MANUAL */}
+              <button
+                type="button"
+                onClick={() => setModalNovoContatoPausa(!modalNovoContatoPausa)}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white flex items-center gap-2 shadow-lg shadow-amber-600/25 transition shrink-0"
+              >
+                <Plus className="h-4 w-4" />
+                {modalNovoContatoPausa ? 'Fechar Formulário' : 'Pausar Robô para Novo Número'}
+              </button>
+            </div>
+
+            {/* MINI MÉTRICAS */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-800/80">
+              <div className="p-3 bg-amber-950/20 rounded-xl border border-amber-900/30">
+                <p className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Pause className="h-3 w-3" /> Robô Pausado (Silenciado)
+                </p>
+                <p className="text-xl font-bold text-amber-400 mt-0.5">
+                  {(data?.clientesAguardando || []).filter((c) => c.roboPausado !== false).length}
+                </p>
+              </div>
+
+              <div className="p-3 bg-emerald-950/20 rounded-xl border border-emerald-900/30">
+                <p className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Play className="h-3 w-3" /> Robô Reativado (Ativo)
+                </p>
+                <p className="text-xl font-bold text-emerald-400 mt-0.5">
+                  {(data?.clientesAguardando || []).filter((c) => c.roboPausado === false).length}
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800/60">
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Aguardando Resposta</p>
+                <p className="text-xl font-bold text-slate-100 mt-0.5">
+                  {(data?.clientesAguardando || []).filter((c) => c.status === 'AGUARDANDO').length}
+                </p>
+              </div>
+
+              <div className="p-3 bg-blue-950/20 rounded-xl border border-blue-900/30">
+                <p className="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Atendidos / Concluídos</p>
+                <p className="text-xl font-bold text-blue-400 mt-0.5">
+                  {(data?.clientesAguardando || []).filter((c) => c.status === 'ATENDIDO').length}
+                </p>
+              </div>
+            </div>
+
+            {/* FORMULÁRIO COLAPSÁVEL DE PAUSA MANUAL */}
+            {modalNovoContatoPausa && (
+              <div className="p-4 rounded-xl bg-slate-950/80 border border-amber-500/30 space-y-3 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                    <ShieldAlert className="h-4 w-4 text-amber-400" />
+                    Pausar Respostas Automáticas para um Número do WhatsApp
+                  </h4>
+                  <button
+                    onClick={() => setModalNovoContatoPausa(false)}
+                    className="text-slate-400 hover:text-white"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Insira o número para silenciar o robô imediatamente. Útil se você já estiver conversando diretamente com o cliente pelo WhatsApp e não quiser que o robô envie mensagens automáticas.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">WhatsApp com DDD *</label>
+                    <input
+                      type="text"
+                      value={novoTelefonePausa}
+                      onChange={(e) => setNovoTelefonePausa(e.target.value)}
+                      placeholder="Ex: 18 99179-5656"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Nome do Cliente (Opcional)</label>
+                    <input
+                      type="text"
+                      value={novoNomePausa}
+                      onChange={(e) => setNovoNomePausa(e.target.value)}
+                      placeholder="Ex: João da Silva"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Motivo da Pausa (Opcional)</label>
+                    <input
+                      type="text"
+                      value={novoMotivoPausa}
+                      onChange={(e) => setNovoMotivoPausa(e.target.value)}
+                      placeholder="Ex: Negociação especial no WhatsApp"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalNovoContatoPausa(false)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={salvarPausaManual}
+                    disabled={actionLoading}
+                    className="px-4 py-1.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1.5 shadow-md shadow-amber-600/20 disabled:opacity-50"
+                  >
+                    <Pause className="h-3.5 w-3.5" />
+                    Confirmar Pausa do Robô
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* BARRA DE PESQUISA & FILTROS DE STATUS */}
           <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="relative w-full md:w-96">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -1802,7 +2083,7 @@ export default function ChatbotAdminTab() {
                 type="text"
                 value={buscaHumano}
                 onChange={(e) => setBuscaHumano(e.target.value)}
-                placeholder="Filtrar por nome ou número do cliente..."
+                placeholder="Buscar por nome, telefone ou mensagem..."
                 className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
               />
               {buscaHumano && (
@@ -1815,27 +2096,7 @@ export default function ChatbotAdminTab() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <button
-                onClick={() => setFiltroStatusHumano('AGUARDANDO')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                  filtroStatusHumano === 'AGUARDANDO'
-                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                Aguardando
-              </button>
-              <button
-                onClick={() => setFiltroStatusHumano('ATENDIDO')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                  filtroStatusHumano === 'ATENDIDO'
-                    ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                Concluídos
-              </button>
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
               <button
                 onClick={() => setFiltroStatusHumano('TODOS')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
@@ -1846,17 +2107,60 @@ export default function ChatbotAdminTab() {
               >
                 Todos
               </button>
+              <button
+                onClick={() => setFiltroStatusHumano('PAUSADO')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
+                  filtroStatusHumano === 'PAUSADO'
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                    : 'bg-slate-800 text-amber-400 hover:bg-slate-700'
+                }`}
+              >
+                <Pause className="h-3 w-3" />
+                Robô Silenciado
+              </button>
+              <button
+                onClick={() => setFiltroStatusHumano('ATIVO')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
+                  filtroStatusHumano === 'ATIVO'
+                    ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                    : 'bg-slate-800 text-emerald-400 hover:bg-slate-700'
+                }`}
+              >
+                <Play className="h-3 w-3" />
+                Robô Ativo
+              </button>
+              <button
+                onClick={() => setFiltroStatusHumano('AGUARDANDO')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  filtroStatusHumano === 'AGUARDANDO'
+                    ? 'bg-slate-200 text-slate-950'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                Aguardando
+              </button>
+              <button
+                onClick={() => setFiltroStatusHumano('ATENDIDO')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  filtroStatusHumano === 'ATENDIDO'
+                    ? 'bg-slate-200 text-slate-950'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                Concluídos
+              </button>
             </div>
           </div>
 
+          {/* LISTA DE CARDS DE CLIENTES */}
           {clientesFiltrados.length === 0 ? (
             <div className="bg-slate-900/40 p-12 rounded-2xl border border-slate-800/80 text-center">
               <Users className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-slate-300">Nenhum cliente na fila de espera</h3>
+              <h3 className="text-base font-bold text-slate-300">Nenhum cliente encontrado</h3>
               <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                 {buscaHumano
-                  ? 'Nenhum resultado encontrado para a busca especificada.'
-                  : 'Quando um cliente solicitar atendimento com vendedor ou tirar dúvidas, ele aparecerá aqui com acesso rápido.'}
+                  ? 'Nenhum resultado corresponde à sua pesquisa.'
+                  : 'Quando um cliente solicitar atendimento humano pelo WhatsApp (Opção 5), ele aparecerá automaticamente aqui com o robô silenciado.'}
               </p>
             </div>
           ) : (
@@ -1864,69 +2168,155 @@ export default function ChatbotAdminTab() {
               {clientesFiltrados.map((cli) => {
                 const telLimpo = cli.telefone ? cli.telefone.replace(/[^0-9]/g, '') : '';
                 const linkWhats = `https://wa.me/${telLimpo}?text=Ol%C3%A1%20${encodeURIComponent(
-                  cli.nome
+                  cli.nome || 'Cliente'
                 )}!%20Sou%20da%20equipe%20Ten%C3%B3rio%20Confec%C3%A7%C3%B5es,%20como%20posso%20te%20ajudar?`;
+                const isPausado = cli.roboPausado !== false;
 
                 return (
                   <div
                     key={cli.id}
                     className={`p-5 rounded-2xl border flex flex-col justify-between transition-all backdrop-blur-sm ${
-                      cli.status === 'AGUARDANDO'
-                        ? 'bg-amber-950/20 border-amber-500/30 shadow-lg shadow-amber-500/5'
-                        : 'bg-slate-900/50 border-slate-800/60 opacity-80'
+                      isPausado
+                        ? 'bg-slate-900/90 border-amber-500/40 shadow-lg shadow-amber-500/5 ring-1 ring-amber-500/20'
+                        : 'bg-slate-900/50 border-slate-800/80 hover:border-slate-700'
                     }`}
                   >
                     <div>
+                      {/* HEADER DO CARD: NOME, CONTATO E STATUS DO ROBÔ */}
                       <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h4 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                        <div className="overflow-hidden">
+                          <h4 className="text-base font-bold text-slate-100 truncate flex items-center gap-2">
                             {cli.nome || 'Cliente WhatsApp'}
                           </h4>
                           <p className="text-xs text-slate-400 font-mono mt-0.5">📱 {cli.telefone || 'Sem número'}</p>
                         </div>
-                        {cli.status === 'AGUARDANDO' ? (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse">
-                            Aguardando
+
+                        {/* BADGE VISUAL DE STATUS DO ROBÔ */}
+                        {isPausado ? (
+                          <span
+                            title="O robô não responderá automaticamente a este contato"
+                            className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 animate-pulse shrink-0"
+                          >
+                            <Pause className="h-3 w-3 fill-amber-400" />
+                            Robô Silenciado
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            Atendido
+                          <span
+                            title="O robô responderá automaticamente caso este cliente envie mensagens"
+                            className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shrink-0"
+                          >
+                            <Play className="h-3 w-3 fill-emerald-400" />
+                            Robô Ativo
                           </span>
                         )}
                       </div>
 
-                      <div className="mt-4 p-3 rounded-xl bg-slate-950/60 border border-slate-800/50">
-                        <p className="text-xs text-slate-400">
-                          <strong className="text-slate-300">Motivo:</strong> {cli.motivo}
+                      {/* DETALHES DO ATENDIMENTO */}
+                      <div className="mt-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800/50 space-y-1.5">
+                        <p className="text-xs text-slate-300">
+                          <strong className="text-slate-400">Motivo:</strong> {cli.motivo}
                         </p>
-                        <p className="text-[11px] text-slate-500 mt-1">
+                        <p className="text-[11px] text-slate-500">
                           ⏰ Solicitado em: {cli.data ? new Date(cli.data).toLocaleString('pt-BR') : 'Data não informada'}
                         </p>
+                        {cli.pausadoEm && isPausado && (
+                          <p className="text-[10px] text-amber-400/90 font-mono">
+                            ⏸️ Silenciado em: {new Date(cli.pausadoEm).toLocaleTimeString('pt-BR')}
+                          </p>
+                        )}
+                        {cli.reativadoEm && !isPausado && (
+                          <p className="text-[10px] text-emerald-400/90 font-mono">
+                            ▶️ Reativado em: {new Date(cli.reativadoEm).toLocaleTimeString('pt-BR')}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* ÚLTIMA MENSAGEM RECEBIDA DO CLIENTE (SE HOUVER) */}
+                      {cli.ultimaMensagem && (
+                        <div className="mt-2.5 p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-start gap-2.5">
+                          <MessageCircle className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
+                          <div className="overflow-hidden">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                              Última Mensagem do Cliente
+                            </p>
+                            <p className="text-xs text-slate-200 mt-0.5 italic break-words line-clamp-3">
+                              &ldquo;{cli.ultimaMensagem}&rdquo;
+                            </p>
+                            {cli.ultimaMensagemEm && (
+                              <span className="text-[10px] text-slate-500 mt-1 block">
+                                {new Date(cli.ultimaMensagemEm).toLocaleTimeString('pt-BR')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* LEGENDA INFORMATIVA DO COMPORTAMENTO DO ROBÔ */}
+                      <div className="mt-2.5 px-1">
+                        {isPausado ? (
+                          <p className="text-[11px] text-amber-300/80 flex items-center gap-1.5">
+                            <ShieldAlert className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                            Robô pausado: não responderá automaticamente.
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-emerald-400/80 flex items-center gap-1.5">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                            Robô ativo: responderá com menus e orçamentos normais.
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    <div className="pt-4 mt-4 border-t border-slate-800/60 flex items-center justify-between gap-2">
+                    {/* BOTÕES DE AÇÃO: REATIVAR / PAUSAR ROBÔ, WHATSAPP, CONCLUIR, EXCLUIR */}
+                    <div className="pt-4 mt-4 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-2">
+                      {/* BOTÃO PRINCIPAL DE CONTROLE DO ROBÔ */}
+                      {isPausado ? (
+                        <button
+                          onClick={() => reativarRobo(cli)}
+                          disabled={actionLoading}
+                          title="Voltar a responder automaticamente com o robô para este contato"
+                          className="flex-1 min-w-[130px] px-3 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white flex items-center justify-center gap-1.5 transition shadow-md shadow-emerald-600/20 disabled:opacity-50"
+                        >
+                          <Play className="h-3.5 w-3.5 fill-white" />
+                          Reativar Robô
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => pausarRobo(cli)}
+                          disabled={actionLoading}
+                          title="Silenciar o robô para este contato"
+                          className="flex-1 min-w-[130px] px-3 py-2 rounded-xl text-xs font-bold bg-amber-600/90 hover:bg-amber-600 text-white flex items-center justify-center gap-1.5 transition border border-amber-500/30 disabled:opacity-50"
+                        >
+                          <Pause className="h-3.5 w-3.5 fill-white" />
+                          Pausar Robô
+                        </button>
+                      )}
+
+                      {/* ABRIR CONVERSA NO WHATSAPP */}
                       <a
                         href={linkWhats}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center gap-2 transition shadow-md shadow-emerald-600/20"
+                        className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center gap-1.5 transition"
                       >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        Abrir WhatsApp
+                        <ExternalLink className="h-3.5 w-3.5 text-emerald-400" />
+                        WhatsApp
                       </a>
 
+                      {/* CONCLUIR ATENDIMENTO (E REATIVAR ROBÔ) */}
                       {cli.status === 'AGUARDANDO' && (
                         <button
-                          onClick={() => concluirAtendimento(cli.id)}
+                          onClick={() => concluirAtendimento(cli.id, true)}
                           disabled={actionLoading}
-                          title="Marcar como atendido"
-                          className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 transition"
+                          title="Concluir atendimento e reativar respostas automáticas"
+                          className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 transition flex items-center gap-1"
                         >
                           <Check className="h-4 w-4" />
+                          Concluir
                         </button>
                       )}
 
+                      {/* EXCLUIR ITEM DA LISTA */}
                       <button
                         onClick={() => removerAtendimento(cli.id)}
                         disabled={actionLoading}

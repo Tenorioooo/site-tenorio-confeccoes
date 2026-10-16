@@ -47,9 +47,12 @@ next-env.d.ts
 *.db-shm
 dev.db
 
-# bot cache & sessions
+# bot cache & sessions & local customer data
 .wwebjs_auth/
 .wwebjs_cache/
 bot/.wwebjs_auth/
 bot/.wwebjs_cache/
+bot/clientesAguardando.json
+bot/followUpsEnviados.json
+
 

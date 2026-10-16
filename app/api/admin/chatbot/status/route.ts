@@ -118,7 +118,30 @@ export async function POST(req: Request) {
         });
       } catch (e) {}
 
-      return NextResponse.json({ success: true, message: 'Heartbeat registrado com sucesso!' });
+      // Busca comandos pendentes para enviar de volta ao robô
+      let pendingCommands: any[] = [];
+      try {
+        const pendingSetting = await prisma.siteSetting.findUnique({
+          where: { key: 'chatbot_pending_commands' }
+        });
+        if (pendingSetting?.value) {
+          const parsed = JSON.parse(pendingSetting.value);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            pendingCommands = parsed;
+            // Limpa comandos já despachados
+            await prisma.siteSetting.update({
+              where: { key: 'chatbot_pending_commands' },
+              data: { value: '[]' }
+            });
+          }
+        }
+      } catch (e) {}
+
+      return NextResponse.json({
+        success: true,
+        message: 'Heartbeat registrado com sucesso!',
+        pendingCommands
+      });
     }
 
     // 2. Se for uma ação manual (restart, logout, etc.)

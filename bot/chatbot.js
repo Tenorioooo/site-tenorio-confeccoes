@@ -31,7 +31,92 @@ const stats = {
   iniciadoEm: new Date().toISOString(),
 };
 const ultimosOrcamentos = [];
-const clientesAguardandoHumano = [];
+
+// =====================================
+// PERSISTÊNCIA DA FILA DE ATENDIMENTO HUMANO & CONTROLE DE RESPOSTAS AUTOMÁTICAS
+// =====================================
+const CAMINHO_CLIENTES_AGUARDANDO = path.join(__dirname, "clientesAguardando.json");
+
+function carregarClientesAguardando() {
+  try {
+    if (fs.existsSync(CAMINHO_CLIENTES_AGUARDANDO)) {
+      const dados = JSON.parse(fs.readFileSync(CAMINHO_CLIENTES_AGUARDANDO, "utf-8"));
+      if (Array.isArray(dados)) {
+        return dados;
+      }
+    }
+  } catch (e) {
+    console.error("Erro ao carregar clientesAguardando.json:", e.message);
+  }
+  return [];
+}
+
+const clientesAguardandoHumano = carregarClientesAguardando();
+
+function salvarClientesAguardando() {
+  try {
+    fs.writeFileSync(CAMINHO_CLIENTES_AGUARDANDO, JSON.stringify(clientesAguardandoHumano, null, 2), "utf-8");
+  } catch (e) {
+    console.error("Erro ao salvar clientesAguardando.json:", e.message);
+  }
+}
+
+function normalizarTelefone(raw) {
+  if (!raw) return "";
+  let t = String(raw).split("@")[0].replace(/[^0-9]/g, "");
+  if (t.length >= 10 && t.length <= 11 && !t.startsWith("55")) {
+    t = "55" + t;
+  }
+  return t;
+}
+
+function isMesmoTelefone(telA, telB) {
+  const a = normalizarTelefone(telA);
+  const b = normalizarTelefone(telB);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.length >= 8 && b.length >= 8) {
+    const ultimos8A = a.slice(-8);
+    const ultimos8B = b.slice(-8);
+    if (ultimos8A === ultimos8B) {
+      if (a.length >= 10 && b.length >= 10) {
+        const dddA = a.slice(-10, -8);
+        const dddB = b.slice(-10, -8);
+        return dddA === dddB;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+function isRoboPausadoParaContato(telefoneRaw, jidRaw) {
+  const telLimpo = normalizarTelefone(telefoneRaw);
+  const jidLimpo = normalizarTelefone(jidRaw);
+
+  const cliente = clientesAguardandoHumano.find((c) => {
+    return isMesmoTelefone(c.telefone, telLimpo) || (jidLimpo && isMesmoTelefone(c.telefone, jidLimpo));
+  });
+
+  if (!cliente) return false;
+
+  if (typeof cliente.roboPausado === "boolean") {
+    return cliente.roboPausado;
+  }
+
+  // Se não foi explicitamente reativado, considera pausado se estiver como AGUARDANDO
+  return cliente.status === "AGUARDANDO";
+}
+
+function atualizarUltimaMensagemCliente(telefoneRaw, textoMensagem) {
+  const telLimpo = normalizarTelefone(telefoneRaw);
+  const index = clientesAguardandoHumano.findIndex((c) => isMesmoTelefone(c.telefone, telLimpo));
+  if (index >= 0) {
+    clientesAguardandoHumano[index].ultimaMensagem = (textoMensagem || "").slice(0, 150);
+    clientesAguardandoHumano[index].ultimaMensagemEm = new Date().toISOString();
+    salvarClientesAguardando();
+  }
+}
 
 // =====================================
 // CONFIGURAÇÕES DE NOTIFICAÇÕES (ADMIN E WEB PUSH)
@@ -234,12 +319,9 @@ async function dispararNotificacaoAdmin({ tipo, titulo, mensagem, dados }) {
 }
 
 function registrarClienteAguardando(numeroRaw, nomeContato, motivo) {
-  let telefone = String(numeroRaw || "").replace(/[^0-9]/g, "");
-  if (telefone.length >= 10 && telefone.length <= 11 && !telefone.startsWith("55")) {
-    telefone = "55" + telefone;
-  }
+  let telefone = normalizarTelefone(numeroRaw);
   const id = "CLI-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
-  const index = clientesAguardandoHumano.findIndex((c) => c.telefone === telefone && c.status === "AGUARDANDO");
+  const index = clientesAguardandoHumano.findIndex((c) => isMesmoTelefone(c.telefone, telefone));
   const novoRegistro = {
     id,
     nome: nomeContato || "Cliente",
@@ -247,6 +329,8 @@ function registrarClienteAguardando(numeroRaw, nomeContato, motivo) {
     motivo: motivo || "Solicitação de Atendimento Humano",
     data: new Date().toISOString(),
     status: "AGUARDANDO",
+    roboPausado: true,
+    pausadoEm: new Date().toISOString(),
   };
 
   if (index >= 0) {
@@ -254,18 +338,28 @@ function registrarClienteAguardando(numeroRaw, nomeContato, motivo) {
       ...clientesAguardandoHumano[index],
       ...novoRegistro,
       id: clientesAguardandoHumano[index].id,
+      status: "AGUARDANDO",
+      roboPausado: true,
+      pausadoEm: new Date().toISOString(),
     };
   } else {
     clientesAguardandoHumano.unshift(novoRegistro);
   }
   if (clientesAguardandoHumano.length > 50) clientesAguardandoHumano.pop();
-  console.log(`👤 [Fila de Atendimento] Cliente adicionado/atualizado: ${nomeContato} (${telefone}) - ${motivo}`);
+  salvarClientesAguardando();
+  console.log(`👤 [Fila de Atendimento] Robô PAUSADO para: ${nomeContato} (${telefone}) - ${motivo}`);
+
+  // Limpa estado pendente de conversa se houver
+  if (telefone) {
+    estadosConversa.delete(telefone);
+    estadosConversa.delete(`${telefone}@c.us`);
+  }
 
   // Dispara alerta imediato
   dispararNotificacaoAdmin({
     tipo: "ATENDIMENTO_HUMANO",
     titulo: "🚨 Atendimento Humano Solicitado",
-    mensagem: `*Cliente:* ${nomeContato || "Cliente"}\n*WhatsApp:* ${telefone}\n*Motivo:* ${motivo || "Opção 5"}`,
+    mensagem: `*Cliente:* ${nomeContato || "Cliente"}\n*WhatsApp:* ${telefone}\n*Motivo:* ${motivo || "Opção 5"} (Robô pausado automaticamente)`,
     dados: { clientePhone: telefone, nome: nomeContato },
   });
 }
@@ -610,6 +704,17 @@ client.on("message_create", async (msg) => {
     if (!texto) return;
 
     console.log(`📩 [Mensagem Recebida] De: ${msg.from} | Texto: "${msg.body.slice(0, 80).replace(/\n/g, " ")}..."`);
+
+    // Extrai dados do lead / contato para verificar permissão do robô
+    const leadInfo = await extrairDadosLead(msg);
+    const telefoneContato = leadInfo.telefone || msg.from;
+
+    // 🛑 SILENCIADOR DE RESPOSTAS AUTOMÁTICAS (ATENDIMENTO HUMANO ATIVO)
+    if (isRoboPausadoParaContato(telefoneContato, msg.from)) {
+      console.log(`⏸️ [Robô Silenciado] Mensagem de ${telefoneContato} (${leadInfo.nomeContato}): "${msg.body.slice(0, 60).replace(/\n/g, ' ')}" - Atendimento humano em andamento, resposta automática bloqueada.`);
+      atualizarUltimaMensagemCliente(telefoneContato, msg.body);
+      return;
+    }
 
     stats.totalMensagens++;
 
@@ -996,7 +1101,8 @@ client.on("message_create", async (msg) => {
       const msgAtendente =
         `👨‍💼 *ATENDIMENTO HUMANIZADO*\n\n` +
         `Perfeito! Já notifiquei um de nossos consultores da *Tenório Confecções*.\n\n` +
-        `Por favor, deixe sua dúvida ou detalhes do pedido abaixo que em instantes você será atendido(a)! ⏳🤝`;
+        `As respostas automáticas deste robô foram *pausadas* para você.\n` +
+        `Por favor, deixe sua dúvida ou detalhes do pedido abaixo que em instantes nossa equipe continuará seu atendimento por aqui! ⏳🤝`;
 
       await responder(msgAtendente);
       return;
@@ -1053,13 +1159,144 @@ app.get("/api/status", (req, res) => {
   });
 });
 
-// 1.1 Marcar Atendimento como Concluído
+// 1.1 Pausar Robô para o Contato
+app.post("/api/atendimento/:id/pausar", (req, res) => {
+  const id = req.params.id;
+  const index = clientesAguardandoHumano.findIndex((c) => c.id === id);
+  if (index >= 0) {
+    clientesAguardandoHumano[index].roboPausado = true;
+    clientesAguardandoHumano[index].pausadoEm = new Date().toISOString();
+    clientesAguardandoHumano[index].status = "AGUARDANDO";
+    salvarClientesAguardando();
+    console.log(`⏸️ [Fila de Atendimento] Robô PAUSADO para: ${clientesAguardandoHumano[index].nome} (${clientesAguardandoHumano[index].telefone})`);
+    res.json({ success: true, message: "Robô pausado para este contato! Respostas automáticas silenciadas.", item: clientesAguardandoHumano[index] });
+  } else {
+    res.status(404).json({ success: false, message: "Cliente não encontrado na fila." });
+  }
+});
+
+// 1.2 Reativar Robô para o Contato
+app.post("/api/atendimento/:id/reativar", (req, res) => {
+  const id = req.params.id;
+  const index = clientesAguardandoHumano.findIndex((c) => c.id === id);
+  if (index >= 0) {
+    clientesAguardandoHumano[index].roboPausado = false;
+    clientesAguardandoHumano[index].status = "ATENDIDO";
+    clientesAguardandoHumano[index].reativadoEm = new Date().toISOString();
+
+    const tel = clientesAguardandoHumano[index].telefone;
+    if (tel) {
+      estadosConversa.delete(tel);
+      estadosConversa.delete(`${tel}@c.us`);
+    }
+
+    salvarClientesAguardando();
+    console.log(`▶️ [Fila de Atendimento] Robô REATIVADO para: ${clientesAguardandoHumano[index].nome} (${clientesAguardandoHumano[index].telefone})`);
+    res.json({ success: true, message: "Respostas automáticas reativadas para este contato!", item: clientesAguardandoHumano[index] });
+  } else {
+    res.status(404).json({ success: false, message: "Cliente não encontrado na fila." });
+  }
+});
+
+// 1.3 Alternar (Toggle) Robô para o Contato
+app.post("/api/atendimento/:id/toggle-bot", (req, res) => {
+  const id = req.params.id;
+  const index = clientesAguardandoHumano.findIndex((c) => c.id === id);
+  if (index >= 0) {
+    const atualPausado = clientesAguardandoHumano[index].roboPausado !== false;
+    const novoPausado = !atualPausado;
+    clientesAguardandoHumano[index].roboPausado = novoPausado;
+
+    if (novoPausado) {
+      clientesAguardandoHumano[index].pausadoEm = new Date().toISOString();
+      clientesAguardandoHumano[index].status = "AGUARDANDO";
+    } else {
+      clientesAguardandoHumano[index].reativadoEm = new Date().toISOString();
+      clientesAguardandoHumano[index].status = "ATENDIDO";
+      const tel = clientesAguardandoHumano[index].telefone;
+      if (tel) {
+        estadosConversa.delete(tel);
+        estadosConversa.delete(`${tel}@c.us`);
+      }
+    }
+
+    salvarClientesAguardando();
+    console.log(`🔄 [Fila de Atendimento] Toggle robô para ${clientesAguardandoHumano[index].nome}: ${novoPausado ? "PAUSADO" : "ATIVO"}`);
+    res.json({
+      success: true,
+      message: novoPausado ? "Robô pausado para este contato!" : "Robô reativado para este contato!",
+      item: clientesAguardandoHumano[index]
+    });
+  } else {
+    res.status(404).json({ success: false, message: "Cliente não encontrado na fila." });
+  }
+});
+
+// 1.4 Adicionar Manualmente um Número para Pausar Robô
+app.post("/api/atendimento/adicionar-pausa", (req, res) => {
+  const { telefone: telRaw, nome, motivo, pausar } = req.body;
+  const telLimpo = normalizarTelefone(telRaw);
+  if (!telLimpo || telLimpo.length < 10) {
+    return res.status(400).json({ success: false, message: "Número de telefone inválido." });
+  }
+
+  const devePausar = pausar !== false;
+  let index = clientesAguardandoHumano.findIndex((c) => isMesmoTelefone(c.telefone, telLimpo));
+  let item;
+
+  if (index >= 0) {
+    clientesAguardandoHumano[index].roboPausado = devePausar;
+    if (devePausar) {
+      clientesAguardandoHumano[index].status = "AGUARDANDO";
+      clientesAguardandoHumano[index].pausadoEm = new Date().toISOString();
+    } else {
+      clientesAguardandoHumano[index].status = "ATENDIDO";
+      clientesAguardandoHumano[index].reativadoEm = new Date().toISOString();
+    }
+    if (nome) clientesAguardandoHumano[index].nome = nome;
+    if (motivo) clientesAguardandoHumano[index].motivo = motivo;
+    item = clientesAguardandoHumano[index];
+  } else {
+    item = {
+      id: "CLI-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+      nome: nome || "Contato Manual",
+      telefone: telLimpo,
+      motivo: motivo || "Pausa manual via Painel Admin",
+      data: new Date().toISOString(),
+      status: devePausar ? "AGUARDANDO" : "ATENDIDO",
+      roboPausado: devePausar,
+      pausadoEm: devePausar ? new Date().toISOString() : undefined,
+      reativadoEm: devePausar ? undefined : new Date().toISOString(),
+    };
+    clientesAguardandoHumano.unshift(item);
+  }
+
+  salvarClientesAguardando();
+  console.log(`📌 [Fila de Atendimento] Contato manual ${telLimpo} salvo: roboPausado=${devePausar}`);
+  res.json({
+    success: true,
+    message: devePausar ? "Robô pausado para este número!" : "Robô liberado para este número!",
+    item
+  });
+});
+
+// 1.5 Marcar Atendimento como Concluído
 app.post("/api/atendimento/:id/concluir", (req, res) => {
   const id = req.params.id;
   const index = clientesAguardandoHumano.findIndex((c) => c.id === id);
   if (index >= 0) {
     clientesAguardandoHumano[index].status = "ATENDIDO";
     clientesAguardandoHumano[index].concluidoEm = new Date().toISOString();
+    if (req.body && req.body.reativarBot === true) {
+      clientesAguardandoHumano[index].roboPausado = false;
+      clientesAguardandoHumano[index].reativadoEm = new Date().toISOString();
+      const tel = clientesAguardandoHumano[index].telefone;
+      if (tel) {
+        estadosConversa.delete(tel);
+        estadosConversa.delete(`${tel}@c.us`);
+      }
+    }
+    salvarClientesAguardando();
     console.log(`✅ [Fila de Atendimento] Atendimento concluído: ${clientesAguardandoHumano[index].nome}`);
     res.json({ success: true, message: "Atendimento marcado como concluído!", item: clientesAguardandoHumano[index] });
   } else {
@@ -1067,12 +1304,13 @@ app.post("/api/atendimento/:id/concluir", (req, res) => {
   }
 });
 
-// 1.2 Excluir Item da Fila de Atendimento
+// 1.6 Excluir Item da Fila de Atendimento
 app.delete("/api/atendimento/:id", (req, res) => {
   const id = req.params.id;
   const index = clientesAguardandoHumano.findIndex((c) => c.id === id);
   if (index >= 0) {
     const removido = clientesAguardandoHumano.splice(index, 1);
+    salvarClientesAguardando();
     console.log(`🗑️ [Fila de Atendimento] Cliente removido da fila: ${removido[0]?.nome}`);
     res.json({ success: true, message: "Removido da fila com sucesso!", removido: removido[0] });
   } else {
@@ -1438,6 +1676,75 @@ function montarPayloadStatus() {
   };
 }
 
+async function processarComandosNuvem(comandos) {
+  if (!Array.isArray(comandos) || comandos.length === 0) return;
+  for (const cmd of comandos) {
+    try {
+      console.log(`📡 [Comando da Nuvem Recebido]:`, cmd);
+      if (cmd.action === "pausar" || cmd.action === "reativar" || cmd.action === "toggle") {
+        const id = cmd.id;
+        const tel = cmd.telefone;
+        let index = -1;
+        if (id) index = clientesAguardandoHumano.findIndex((c) => c.id === id);
+        if (index === -1 && tel) index = clientesAguardandoHumano.findIndex((c) => isMesmoTelefone(c.telefone, tel));
+
+        if (index >= 0) {
+          const devePausar = cmd.action === "pausar" ? true : cmd.action === "reativar" ? false : !(clientesAguardandoHumano[index].roboPausado !== false);
+          clientesAguardandoHumano[index].roboPausado = devePausar;
+          if (devePausar) {
+            clientesAguardandoHumano[index].pausadoEm = new Date().toISOString();
+            clientesAguardandoHumano[index].status = "AGUARDANDO";
+          } else {
+            clientesAguardandoHumano[index].reativadoEm = new Date().toISOString();
+            clientesAguardandoHumano[index].status = "ATENDIDO";
+            const t = clientesAguardandoHumano[index].telefone;
+            if (t) {
+              estadosConversa.delete(t);
+              estadosConversa.delete(`${t}@c.us`);
+            }
+          }
+        } else if (tel && (cmd.action === "pausar" || cmd.action === "toggle")) {
+          clientesAguardandoHumano.unshift({
+            id: "CLI-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+            nome: cmd.nome || "Cliente",
+            telefone: normalizarTelefone(tel),
+            motivo: cmd.motivo || "Pausa acionada via Painel Admin",
+            data: new Date().toISOString(),
+            status: "AGUARDANDO",
+            roboPausado: true,
+            pausadoEm: new Date().toISOString(),
+          });
+        }
+        salvarClientesAguardando();
+      } else if (cmd.action === "concluir" && cmd.id) {
+        const index = clientesAguardandoHumano.findIndex((c) => c.id === cmd.id);
+        if (index >= 0) {
+          clientesAguardandoHumano[index].status = "ATENDIDO";
+          clientesAguardandoHumano[index].concluidoEm = new Date().toISOString();
+          if (cmd.reativarBot === true) {
+            clientesAguardandoHumano[index].roboPausado = false;
+            clientesAguardandoHumano[index].reativadoEm = new Date().toISOString();
+            const t = clientesAguardandoHumano[index].telefone;
+            if (t) {
+              estadosConversa.delete(t);
+              estadosConversa.delete(`${t}@c.us`);
+            }
+          }
+          salvarClientesAguardando();
+        }
+      } else if (cmd.action === "remover" && cmd.id) {
+        const index = clientesAguardandoHumano.findIndex((c) => c.id === cmd.id);
+        if (index >= 0) {
+          clientesAguardandoHumano.splice(index, 1);
+          salvarClientesAguardando();
+        }
+      }
+    } catch (errCmd) {
+      console.error("Erro ao processar comando da nuvem:", errCmd.message);
+    }
+  }
+}
+
 async function enviarHeartbeatParaSite() {
   const payload = {
     type: "HEARTBEAT",
@@ -1447,16 +1754,24 @@ async function enviarHeartbeatParaSite() {
   const targetUrls = [
     "http://localhost:3000/api/admin/chatbot/status",
     "http://127.0.0.1:3000/api/admin/chatbot/status",
+    "http://localhost:3002/api/admin/chatbot/status",
+    "http://127.0.0.1:3002/api/admin/chatbot/status",
     "https://www.tenorioconfeccoes.shop/api/admin/chatbot/status",
   ];
 
   for (const url of targetUrls) {
     try {
-      fetch(url, {
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      }).catch(() => {});
+      });
+      if (res && res.ok) {
+        const json = await res.json().catch(() => null);
+        if (json && Array.isArray(json.pendingCommands) && json.pendingCommands.length > 0) {
+          await processarComandosNuvem(json.pendingCommands);
+        }
+      }
     } catch (e) {}
   }
 }
@@ -1557,6 +1872,12 @@ async function executarRotinaFollowUp() {
         let cleanPhone = String(orc.whatsapp).replace(/[^0-9]/g, "");
         if (cleanPhone.length >= 10 && cleanPhone.length <= 11 && !cleanPhone.startsWith("55")) {
           cleanPhone = "55" + cleanPhone;
+        }
+
+        // Se o cliente estiver com o robô pausado (em atendimento humano), pula o follow-up
+        if (isRoboPausadoParaContato(cleanPhone)) {
+          console.log(`⏸️ [Follow-Up Pulado] Cliente ${orc.customerName} (${cleanPhone}) está em atendimento humano com robô pausado.`);
+          continue;
         }
 
         if (cleanPhone.length >= 12 && cleanPhone.length <= 13) {
