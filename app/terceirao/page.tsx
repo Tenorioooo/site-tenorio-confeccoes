@@ -1,6 +1,9 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import TerceiraoClient from './TerceiraoClient';
+import { getTerceiraoCombos } from '@/lib/terceiraoData';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Kits para Terceirão & Formaturas | Tenório Confecções',
@@ -20,6 +23,7 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function TerceiraoPage() {
-  return <TerceiraoClient />;
+export default async function TerceiraoPage() {
+  const combos = await getTerceiraoCombos();
+  return <TerceiraoClient initialCombos={combos} />;
 }

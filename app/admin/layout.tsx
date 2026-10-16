@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Bot, Package, Palette, Tag, FileSpreadsheet, Settings, LogOut, ExternalLink, ImageIcon, Briefcase, MessageSquare, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Bot, Package, Palette, Tag, FileSpreadsheet, Settings, LogOut, ExternalLink, ImageIcon, Briefcase, MessageSquare, Menu, X, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminInactivityWatcher } from '@/components/AdminInactivityWatcher';
 
@@ -36,6 +36,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Produtos', href: '/admin/produtos', icon: Package },
+    { name: 'Combos Terceirão', href: '/admin/terceirao', icon: GraduationCap },
     { name: 'Estampas', href: '/admin/estampas', icon: Palette },
     { name: 'Categorias', href: '/admin/estampas/categorias', icon: Tag },
     { name: 'Portfólio', href: '/admin/portfolio', icon: Briefcase },
