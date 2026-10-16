@@ -1,5 +1,3 @@
-import { prisma } from './db';
-
 export interface ComboItemDetail {
   name: string;
   badge?: string;
@@ -342,22 +340,3 @@ export const DEFAULT_COMBOS: ComboData[] = [
       'Olá Tenório Confecções! Queremos cotar o *Combo Jaqueta College Varsity 🎓* para a nossa turma de formandos!',
   },
 ];
-
-export async function getTerceiraoCombos(): Promise<ComboData[]> {
-  try {
-    const setting = await prisma.siteSetting.findUnique({
-      where: { key: 'terceirao_combos' },
-    });
-
-    if (setting?.value) {
-      const parsed = JSON.parse(setting.value);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (error) {
-    console.error('Erro ao buscar combos do Terceirão do banco:', error);
-  }
-
-  return DEFAULT_COMBOS;
-}

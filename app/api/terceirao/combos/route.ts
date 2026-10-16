@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { DEFAULT_COMBOS, getTerceiraoCombos, ComboData } from '@/lib/terceiraoData';
+import { DEFAULT_COMBOS, ComboData } from '@/lib/terceiraoData';
+import { getTerceiraoCombos } from '@/lib/terceiraoServer';
 
 export async function GET() {
   try {

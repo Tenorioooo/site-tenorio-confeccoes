@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import TerceiraoClient from './TerceiraoClient';
-import { getTerceiraoCombos } from '@/lib/terceiraoData';
+import { getTerceiraoCombos } from '@/lib/terceiraoServer';
 
 export const dynamic = 'force-dynamic';
 
